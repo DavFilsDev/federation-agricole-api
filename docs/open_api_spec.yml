@@ -1,0 +1,531 @@
+openapi: 3.0.0
+info:
+  title: API Fédération de Collectivités Agricoles
+  description: |-
+    API pour la gestion des collectivités agricoles, des membres, des mandats,
+    des cotisations, de la trésorerie, des activités et de l'assiduité.
+    Conforme au cahier des charges (PROG3-TD-Final-OAS.pdf).
+  version: 1.0.0
+  contact:
+    name: M. Ryan A.
+    email: ryan.a@example.com
+
+servers:
+  - url: https://api.federation-agricole.mg/v1
+    description: Serveur de production
+
+tags:
+  - name: Collectivités (A)
+    description: Ouverture et gestion des collectivités
+  - name: Membres (B)
+    description: Admission, changement et démission des membres
+  - name: Cotisations & Paiements (C)
+    description: Encaissements, traçabilité et reversements
+  - name: Trésorerie & Comptes (D)
+    description: Gestion des comptes bancaires, mobile money et caisse
+  - name: Activités (E)
+    description: Activités obligatoires et exceptionnelles
+  - name: Assiduité (F)
+    description: Gestion des présences aux activités
+  - name: Statistiques (G)
+    description: Rapports mensuels et indicateurs
+
+paths:
+  # ==================== A - OUVERTURE D'UNE NOUVELLE COLLECTIVITÉ ====================
+  /collectivites:
+    post:
+      tags: [Collectivités (A)]
+      summary: Demander l'ouverture d'une nouvelle collectivité
+      description: |-
+        Conditions à vérifier côté serveur :
+        - Au moins 10 membres inscrits (dont antériorité ≥ 6 mois dans la fédération)
+        - Postes spécifiques occupés
+        - Autorisation formelle (champ `autorisee` à true par la fédération)
+      operationId: creerCollectivite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectiviteInput'
+      responses:
+        '201':
+          description: Collectivité créée (en attente d'autorisation)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivite'
+        '400':
+          description: Conditions non remplies
+        '403':
+          description: Autorisation fédération refusée
+  /collectivites/{id}/autoriser:
+    patch:
+      tags: [Collectivités (A)]
+      summary: Accorder l'autorisation formelle d'ouverture (fédération)
+      operationId: autoriserCollectivite
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Autorisation accordée
+
+  # ==================== B - ADMISSION D'UN NOUVEAU MEMBRE ====================
+  /collectivites/{id}/membres:
+    post:
+      tags: [Membres (B)]
+      summary: Adhérer à une collectivité
+      description: |-
+        Conditions :
+        - Parrainé par un membre confirmé (ancienneté > 90 jours)
+        - Fournir ses infos personnelles
+        - Frais d'adhésion 50.000 MGA (vérifié via paiement)
+      operationId: adhererMembre
+      parameters:
+        - name: id
+          in: path
+          description: ID de la collectivité
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdhesionInput'
+      responses:
+        '201':
+          description: Membre ajouté
+        '400':
+          description: Parrain invalide ou frais non payé
+  /membres/{id}/changer-collectivite:
+    post:
+      tags: [Membres (B)]
+      summary: Changer de collectivité (ex. déménagement)
+      operationId: changerCollectivite
+      parameters:
+        - name: id
+          in: path
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nouvelle_collectivite_id:
+                  type: integer
+      responses:
+        '200':
+          description: Changement effectué
+  /membres/{id}/demissionner:
+    post:
+      tags: [Membres (B)]
+      summary: Démissionner de la collectivité actuelle
+      operationId: demissionner
+      parameters:
+        - name: id
+          in: path
+          required: true
+      responses:
+        '200':
+          description: Démission enregistrée
+
+  # ==================== C - COTISATION ET PAIEMENTS ====================
+  /collectivites/{id}/encaissements:
+    post:
+      tags: [Cotisations & Paiements (C)]
+      summary: Enregistrer un encaissement (trésorier)
+      operationId: enregistrerEncaissement
+      parameters:
+        - name: id
+          in: path
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EncaissementInput'
+      responses:
+        '201':
+          description: Encaissement enregistré
+  /collectivites/{id}/reversements:
+    post:
+      tags: [Cotisations & Paiements (C)]
+      summary: Reverser un pourcentage des cotisations à la fédération
+      operationId: reverserFederation
+      parameters:
+        - name: id
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                montant:
+                  type: number
+                date_reversement:
+                  type: string
+                  format: date
+                pourcentage:
+                  type: number
+      responses:
+        '201':
+          description: Reversement enregistré
+
+  # ==================== D - SITUATION DE TRÉSORERIE ====================
+  /collectivites/{id}/comptes:
+    get:
+      tags: [Trésorerie & Comptes (D)]
+      summary: Liste des comptes (caisse, bancaires, mobile money)
+      operationId: listerComptes
+      parameters:
+        - name: id
+          in: path
+      responses:
+        '200':
+          description: Liste des comptes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Compte'
+    post:
+      summary: Ajouter un compte bancaire ou mobile money
+      operationId: ajouterCompte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CompteBancaireInput'
+                - $ref: '#/components/schemas/CompteMobileMoneyInput'
+      responses:
+        '201':
+          description: Compte créé
+  /federation/comptes:
+    get:
+      tags: [Trésorerie & Comptes (D)]
+      summary: Comptes de la fédération
+      operationId: listerComptesFederation
+      responses:
+        '200':
+          description: OK
+  /comptes/{id}/solde:
+    get:
+      tags: [Trésorerie & Comptes (D)]
+      summary: Solde à une date donnée
+      parameters:
+        - name: id
+          in: path
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Solde
+
+  # ==================== E - ACTIVITÉS ====================
+  /collectivites/{id}/activites:
+    get:
+      tags: [Activités (E)]
+      summary: Activités d'une collectivité
+      operationId: listerActivites
+    post:
+      summary: Créer une activité exceptionnelle
+      operationId: creerActivite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActiviteInput'
+  /federation/activites:
+    get:
+      tags: [Activités (E)]
+      summary: Activités nationales
+    post:
+      summary: Planifier une activité fédérale
+      operationId: planifierActiviteFederale
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActiviteInput'
+
+  # ==================== F - ASSIDUITÉ ====================
+  /activites/{id}/presences:
+    post:
+      tags: [Assiduité (F)]
+      summary: Relevé de présence par le secrétaire
+      operationId: enregistrerPresences
+      parameters:
+        - name: id
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/PresenceInput'
+      responses:
+        '201':
+          description: Présences enregistrées
+  /membres/{id}/assiduite:
+    get:
+      tags: [Assiduité (F)]
+      summary: Taux d'assiduité annuel du membre
+      parameters:
+        - name: id
+          in: path
+        - name: annee
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Taux d'assiduité
+
+  # ==================== G - STATISTIQUES ====================
+  /collectivites/{id}/rapport-mensuel:
+    post:
+      tags: [Statistiques (G)]
+      summary: Rapport mensuel du président à la fédération
+      operationId: envoyerRapportMensuel
+      parameters:
+        - name: id
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mois:
+                  type: string
+                  format: date
+                taux_assiduite_global:
+                  type: number
+                nb_membres_actifs:
+                  type: integer
+      responses:
+        '201':
+          description: Rapport reçu
+  /collectivites/{id}/statistiques/membre/{membre_id}:
+    get:
+      tags: [Statistiques (G)]
+      summary: Statistiques détaillées d'un membre actif
+      parameters:
+        - name: id
+          in: path
+        - name: membre_id
+          in: path
+        - name: date_debut
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_fin
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: |-
+            - Taux d'assiduité sur période
+            - Montant encaissé
+            - Montant impayé potentiel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatistiquesMembre'
+
+# ==================== SCHÉMAS ====================
+components:
+  schemas:
+    CollectiviteInput:
+      type: object
+      required: [nom_unique, ville, specialite_agricole]
+      properties:
+        nom_unique:
+          type: string
+        ville:
+          type: string
+        specialite_agricole:
+          type: string
+    Collectivite:
+      allOf:
+        - $ref: '#/components/schemas/CollectiviteInput'
+        - type: object
+          properties:
+            id:
+              type: integer
+            numero_unique:
+              type: string
+            date_creation:
+              type: string
+              format: date
+            autorisee:
+              type: boolean
+    AdhesionInput:
+      type: object
+      required:
+        - membre
+        - parrain_id
+      properties:
+        membre:
+          $ref: '#/components/schemas/MembreInput'
+        parrain_id:
+          type: integer
+    MembreInput:
+      type: object
+      required:
+        - nom
+        - prenom
+        - date_naissance
+        - genre
+        - adresse
+        - metier
+        - telephone
+        - email
+      properties:
+        nom:
+          type: string
+        prenom:
+          type: string
+        date_naissance:
+          type: string
+          format: date
+        genre:
+          type: string
+          enum: [feminin, masculin]
+        adresse:
+          type: string
+        metier:
+          type: string
+        telephone:
+          type: string
+        email:
+          type: string
+    EncaissementInput:
+      type: object
+      required:
+        - id_membre
+        - montant
+        - date_encaissement
+        - mode_paiement
+        - type_cotisation
+      properties:
+        id_membre:
+          type: integer
+        montant:
+          type: number
+        date_encaissement:
+          type: string
+          format: date
+        mode_paiement:
+          type: string
+          enum: [espèce, virement, mobile money]
+        type_cotisation:
+          type: string
+          enum: [mensuelle, annuelle, ponctuelle]
+    Compte:
+      type: object
+      discriminator:
+        propertyName: type_compte
+      properties:
+        id:
+          type: integer
+        type_compte:
+          type: string
+          enum: [caisse, bancaire, mobile_money]
+        solde:
+          type: number
+        date_solde:
+          type: string
+          format: date
+    CompteBancaireInput:
+      allOf:
+        - $ref: '#/components/schemas/Compte'
+        - type: object
+          properties:
+            titulaire:
+              type: string
+            nom_banque:
+              type: string
+              enum: [BRED, MCB, BMOI, BOA, BGFI, AFG, ACCÈS BANQUE, BAOBAB, SIPEM]
+            code_banque:
+              type: string
+              pattern: '^\d{5}$'
+            code_guichet:
+              type: string
+              pattern: '^\d{5}$'
+            numero_compte:
+              type: string
+              pattern: '^\d{11}$'
+            cle_rib:
+              type: string
+              pattern: '^\d{2}$'
+    CompteMobileMoneyInput:
+      allOf:
+        - $ref: '#/components/schemas/Compte'
+        - type: object
+          properties:
+            titulaire:
+              type: string
+            service:
+              type: string
+              enum: [Orange Money, Mvola, Airtel Money]
+            numero_telephone:
+              type: string
+    ActiviteInput:
+      type: object
+      required: [titre, date_reference, obligation]
+      properties:
+        titre:
+          type: string
+        date_reference:
+          type: string
+          description: "ex: '2ème dimanche'"
+        obligation:
+          type: string
+          enum: [tous, uniquement juniors, uniquement certains]
+    PresenceInput:
+      type: object
+      required: [id_membre, present]
+      properties:
+        id_membre:
+          type: integer
+        present:
+          type: boolean
+        excuse:
+          type: boolean
+        est_invite:
+          type: boolean
+    StatistiquesMembre:
+      type: object
+      properties:
+        taux_assiduite:
+          type: number
+        montant_encaisse:
+          type: number
+        montant_impaye_potentiel:
+          type: number
