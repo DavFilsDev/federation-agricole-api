@@ -33,7 +33,7 @@ tags:
     description: Rapports globaux mensuels et annuels de la fédération
 
 paths:
-  # A - OUVERTURE D'UNE NOUVELLE COLLECTIVITÉ
+  # ==================== A - OUVERTURE D'UNE NOUVELLE COLLECTIVITÉ ====================
   /collectivites:
     post:
       tags: [Collectivités (A)]
@@ -47,13 +47,15 @@ paths:
               $ref: '#/components/schemas/CollectiviteInput'
       responses:
         '201':
-          description: Collectivité créée
+          description: Collectivité créée avec succès
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Collectivite'
         '400':
-          description: Conditions non remplies
+          description: Conditions non remplies (moins de 10 membres, antériorité insuffisante, etc.)
+        '403':
+          description: Autorisation de la fédération non accordée
 
   /collectivites/{id}/autoriser:
     patch:
@@ -68,9 +70,17 @@ paths:
             type: integer
       responses:
         '200':
-          description: Autorisation accordée
+          description: Autorisation accordée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivite'
+        '404':
+          description: Collectivité non trouvée
+        '409':
+          description: Collectivité déjà autorisée
 
-  # B - ADMISSION D'UN NOUVEAU MEMBRE (VERSION B-2)
+  # ==================== B - ADMISSION D'UN NOUVEAU MEMBRE (VERSION B-2) ====================
   /collectivites/{id}/membres/adhesion:
     post:
       tags: [Membres (B)]
@@ -97,7 +107,7 @@ paths:
               $ref: '#/components/schemas/AdhesionInputV2'
       responses:
         '201':
-          description: Membre admis
+          description: Membre admis avec succès
           content:
             application/json:
               schema:
@@ -105,11 +115,13 @@ paths:
         '400':
           description: |-
             Conditions non remplies :
-            - Parrainage insuffisant
+            - Parrainage insuffisant (moins de 2 parrains)
             - Règle des parrains non respectée
             - Paiement incomplet
         '403':
           description: "Refus d'admission (cas 4 : parrains tous externes)"
+        '404':
+          description: Collectivité non trouvée
 
   /membres/{id}/changer-collectivite:
     post:
@@ -120,6 +132,8 @@ paths:
         - name: id
           in: path
           required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
@@ -131,7 +145,15 @@ paths:
                   type: integer
       responses:
         '200':
-          description: Changement effectué
+          description: Changement effectué avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembreResponse'
+        '400':
+          description: Demande invalide
+        '404':
+          description: Membre ou collectivité non trouvé
 
   /membres/{id}/demissionner:
     post:
@@ -142,11 +164,25 @@ paths:
         - name: id
           in: path
           required: true
+          schema:
+            type: integer
       responses:
         '200':
-          description: Démission enregistrée
+          description: Démission enregistrée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Démission enregistrée"
+        '404':
+          description: Membre non trouvé
+        '409':
+          description: Membre déjà démissionnaire
 
-  # C - COTISATION ET PAIEMENTS
+  # ==================== C - COTISATION ET PAIEMENTS ====================
   /collectivites/{id}/encaissements:
     post:
       tags: [Cotisations & Paiements (C)]
@@ -156,6 +192,8 @@ paths:
         - name: id
           in: path
           required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
@@ -164,7 +202,15 @@ paths:
               $ref: '#/components/schemas/EncaissementInput'
       responses:
         '201':
-          description: Encaissement enregistré
+          description: Encaissement enregistré avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encaissement'
+        '400':
+          description: Données invalides
+        '404':
+          description: Collectivité ou membre non trouvé
 
   /collectivites/{id}/cotisations-annuelles:
     get:
@@ -175,6 +221,8 @@ paths:
         - name: id
           in: path
           required: true
+          schema:
+            type: integer
       responses:
         '200':
           description: Montant des cotisations annuelles
@@ -188,6 +236,8 @@ paths:
                   montant_cotisation_annuelle:
                     type: number
                     example: 200000
+        '404':
+          description: Collectivité non trouvée
 
   /collectivites/{id}/reversements:
     post:
@@ -197,6 +247,9 @@ paths:
       parameters:
         - name: id
           in: path
+          required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
@@ -213,9 +266,17 @@ paths:
                   type: number
       responses:
         '201':
-          description: Reversement enregistré
+          description: Reversement enregistré avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reversement'
+        '400':
+          description: Données invalides
+        '404':
+          description: Collectivité non trouvée
 
-  # D - SITUATION DE TRÉSORERIE
+  # ==================== D - SITUATION DE TRÉSORERIE ====================
   /collectivites/{id}/comptes:
     get:
       tags: [Trésorerie & Comptes (D)]
@@ -224,18 +285,29 @@ paths:
       parameters:
         - name: id
           in: path
+          required: true
+          schema:
+            type: integer
       responses:
         '200':
-          description: Liste des comptes
+          description: Liste des comptes de la collectivité
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Compte'
+        '404':
+          description: Collectivité non trouvée
     post:
       summary: Ajouter un compte bancaire ou mobile money
       operationId: ajouterCompte
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
@@ -246,7 +318,15 @@ paths:
                 - $ref: '#/components/schemas/CompteMobileMoneyInput'
       responses:
         '201':
-          description: Compte créé
+          description: Compte créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Compte'
+        '400':
+          description: Données invalides
+        '404':
+          description: Collectivité non trouvée
 
   /federation/comptes:
     get:
@@ -255,7 +335,33 @@ paths:
       operationId: listerComptesFederation
       responses:
         '200':
-          description: OK
+          description: Liste des comptes de la fédération
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Compte'
+    post:
+      summary: Ajouter un compte bancaire ou mobile money à la fédération
+      operationId: ajouterCompteFederation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CompteBancaireInput'
+                - $ref: '#/components/schemas/CompteMobileMoneyInput'
+      responses:
+        '201':
+          description: Compte créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Compte'
+        '400':
+          description: Données invalides
 
   /comptes/{id}/solde:
     get:
@@ -264,6 +370,9 @@ paths:
       parameters:
         - name: id
           in: path
+          required: true
+          schema:
+            type: integer
         - name: date
           in: query
           schema:
@@ -271,29 +380,89 @@ paths:
             format: date
       responses:
         '200':
-          description: Solde
+          description: Solde du compte
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  compte_id:
+                    type: integer
+                  date:
+                    type: string
+                    format: date
+                  solde:
+                    type: number
+        '404':
+          description: Compte non trouvé
 
-  # E - ACTIVITÉS
+  # ==================== E - ACTIVITÉS ====================
   /collectivites/{id}/activites:
     get:
       tags: [Activités (E)]
-      summary: Activités d'une collectivité
+      summary: Liste des activités d'une collectivité
       operationId: listerActivites
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste des activités de la collectivité
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Activite'
+        '404':
+          description: Collectivité non trouvée
     post:
+      tags: [Activités (E)]
       summary: Créer une activité exceptionnelle
       operationId: creerActivite
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ActiviteInput'
+      responses:
+        '201':
+          description: Activité créée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activite'
+        '400':
+          description: Données invalides
+        '404':
+          description: Collectivité non trouvée
 
   /federation/activites:
     get:
       tags: [Activités (E)]
-      summary: Activités nationales
+      summary: Liste des activités nationales de la fédération
+      operationId: listerActivitesFederation
+      responses:
+        '200':
+          description: Liste des activités fédérales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Activite'
     post:
+      tags: [Activités (E)]
       summary: Planifier une activité fédérale
       operationId: planifierActiviteFederale
       requestBody:
@@ -302,8 +471,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ActiviteInput'
+      responses:
+        '201':
+          description: Activité fédérale planifiée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activite'
+        '400':
+          description: Données invalides
 
-  # F - ASSIDUITÉ
+  # ==================== F - ASSIDUITÉ ====================
   /activites/{id}/presences:
     post:
       tags: [Assiduité (F)]
@@ -312,6 +490,9 @@ paths:
       parameters:
         - name: id
           in: path
+          required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
@@ -322,7 +503,20 @@ paths:
                 $ref: '#/components/schemas/PresenceInput'
       responses:
         '201':
-          description: Présences enregistrées
+          description: Présences enregistrées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  nb_presences_enregistrees:
+                    type: integer
+        '400':
+          description: Données invalides
+        '404':
+          description: Activité non trouvée
 
   /membres/{id}/assiduite:
     get:
@@ -331,15 +525,37 @@ paths:
       parameters:
         - name: id
           in: path
+          required: true
+          schema:
+            type: integer
         - name: annee
           in: query
           schema:
             type: integer
       responses:
         '200':
-          description: Taux d'assiduité
+          description: Taux d'assiduité du membre
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  membre_id:
+                    type: integer
+                  annee:
+                    type: integer
+                  taux_assiduite:
+                    type: number
+                  total_activites:
+                    type: integer
+                  total_presences:
+                    type: integer
+                  total_excuses:
+                    type: integer
+        '404':
+          description: Membre non trouvé
 
-  # G - STATISTIQUES COLLECTIVITÉ
+  # ==================== G - STATISTIQUES COLLECTIVITÉ ====================
   /collectivites/{id}/rapport-mensuel:
     post:
       tags: [Statistiques Collectivité (G)]
@@ -348,6 +564,9 @@ paths:
       parameters:
         - name: id
           in: path
+          required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
@@ -364,7 +583,20 @@ paths:
                   type: integer
       responses:
         '201':
-          description: Rapport reçu
+          description: Rapport reçu avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  rapport_id:
+                    type: integer
+        '400':
+          description: Données invalides
+        '404':
+          description: Collectivité non trouvée
 
   /collectivites/{id}/statistiques/membre/{membre_id}:
     get:
@@ -373,8 +605,14 @@ paths:
       parameters:
         - name: id
           in: path
+          required: true
+          schema:
+            type: integer
         - name: membre_id
           in: path
+          required: true
+          schema:
+            type: integer
         - name: date_debut
           in: query
           schema:
@@ -387,16 +625,15 @@ paths:
             format: date
       responses:
         '200':
-          description: |-
-            - Taux d'assiduité sur période
-            - Montant encaissé
-            - Montant impayé potentiel
+          description: Statistiques du membre
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatistiquesMembre'
+        '404':
+          description: Collectivité ou membre non trouvé
 
-  # H - STATISTIQUES DE LA FÉDÉRATION (NOUVEAU)
+  # ==================== H - STATISTIQUES DE LA FÉDÉRATION (NOUVEAU) ====================
   /federation/rapports/mensuels:
     post:
       tags: [Statistiques Fédération (H)]
@@ -424,11 +661,13 @@ paths:
                   default: false
       responses:
         '200':
-          description: Rapport mensuel généré
+          description: Rapport mensuel généré avec succès
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RapportFederationMensuel'
+        '400':
+          description: Période invalide
 
   /federation/rapports/annuels:
     post:
@@ -456,11 +695,13 @@ paths:
                   default: true
       responses:
         '200':
-          description: Rapport annuel généré
+          description: Rapport annuel généré avec succès
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RapportFederationAnnuel'
+        '400':
+          description: Année invalide
 
   /federation/statistiques/collectivites:
     get:
@@ -486,11 +727,13 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/StatistiquesCollectivite'
+        '400':
+          description: Dates invalides
 
-# SCHÉMAS
+# ==================== SCHÉMAS ====================
 components:
   schemas:
-    # A - Collectivités
+    # --- A - Collectivités ---
     CollectiviteInput:
       type: object
       required: [nom_unique, ville, specialite_agricole]
@@ -521,7 +764,7 @@ components:
               description: "Montant des cotisations annuelles obligatoires imposées par la collectivité"
               example: 200000
 
-    # B - Admission (Version B-2)
+    # --- B - Admission (Version B-2) ---
     ParrainageV2:
       type: object
       required:
@@ -631,13 +874,12 @@ components:
             properties:
               parrain_id:
                 type: integer
-                description: "ID du parrain"
               parrain_nom:
                 type: string
               nature_relation:
                 type: string
 
-    # C - Encaissements
+    # --- C - Encaissements ---
     EncaissementInput:
       type: object
       required:
@@ -661,7 +903,33 @@ components:
           type: string
           enum: [mensuelle, annuelle, ponctuelle]
 
-    # D - Comptes
+    Encaissement:
+      allOf:
+        - $ref: '#/components/schemas/EncaissementInput'
+        - type: object
+          properties:
+            id:
+              type: integer
+            date_creation:
+              type: string
+              format: date-time
+
+    Reversement:
+      type: object
+      properties:
+        id:
+          type: integer
+        collectivite_id:
+          type: integer
+        montant:
+          type: number
+        date_reversement:
+          type: string
+          format: date
+        pourcentage:
+          type: number
+
+    # --- D - Comptes ---
     Compte:
       type: object
       discriminator:
@@ -679,42 +947,57 @@ components:
           format: date
 
     CompteBancaireInput:
-      allOf:
-        - $ref: '#/components/schemas/Compte'
-        - type: object
-          properties:
-            titulaire:
-              type: string
-            nom_banque:
-              type: string
-              enum: [BRED, MCB, BMOI, BOA, BGFI, AFG, ACCES BANQUE, BAOBAB, SIPEM]
-            code_banque:
-              type: string
-              pattern: '^\d{5}$'
-            code_guichet:
-              type: string
-              pattern: '^\d{5}$'
-            numero_compte:
-              type: string
-              pattern: '^\d{11}$'
-            cle_rib:
-              type: string
-              pattern: '^\d{2}$'
+      type: object
+      required:
+        - type_compte
+        - titulaire
+        - nom_banque
+        - code_banque
+        - code_guichet
+        - numero_compte
+        - cle_rib
+      properties:
+        type_compte:
+          type: string
+          const: bancaire
+        titulaire:
+          type: string
+        nom_banque:
+          type: string
+          enum: [BRED, MCB, BMOI, BOA, BGFI, AFG, ACCES BANQUE, BAOBAB, SIPEM]
+        code_banque:
+          type: string
+          pattern: '^\d{5}$'
+        code_guichet:
+          type: string
+          pattern: '^\d{5}$'
+        numero_compte:
+          type: string
+          pattern: '^\d{11}$'
+        cle_rib:
+          type: string
+          pattern: '^\d{2}$'
 
     CompteMobileMoneyInput:
-      allOf:
-        - $ref: '#/components/schemas/Compte'
-        - type: object
-          properties:
-            titulaire:
-              type: string
-            service:
-              type: string
-              enum: [Orange Money, Mvola, Airtel Money]
-            numero_telephone:
-              type: string
+      type: object
+      required:
+        - type_compte
+        - titulaire
+        - service
+        - numero_telephone
+      properties:
+        type_compte:
+          type: string
+          const: mobile_money
+        titulaire:
+          type: string
+        service:
+          type: string
+          enum: [Orange Money, Mvola, Airtel Money]
+        numero_telephone:
+          type: string
 
-    # E - Activités
+    # --- E - Activités ---
     ActiviteInput:
       type: object
       required: [titre, date_reference, obligation]
@@ -728,7 +1011,28 @@ components:
           type: string
           enum: [tous, uniquement juniors, uniquement certains]
 
-    # F - Présences
+    Activite:
+      type: object
+      properties:
+        id:
+          type: integer
+        organisateur_type:
+          type: string
+          enum: [collectivite, federation]
+        organisateur_id:
+          type: integer
+        titre:
+          type: string
+        date_reference:
+          type: string
+        obligation:
+          type: string
+          enum: [tous, uniquement juniors, uniquement certains]
+        date_creation:
+          type: string
+          format: date-time
+
+    # --- F - Présences ---
     PresenceInput:
       type: object
       required: [id_membre, present]
@@ -742,7 +1046,7 @@ components:
         est_invite:
           type: boolean
 
-    # G - Statistiques Membre
+    # --- G - Statistiques Membre ---
     StatistiquesMembre:
       type: object
       properties:
@@ -757,7 +1061,7 @@ components:
           type: number
           description: "Montant impayé potentiel sur la période"
 
-    # H - STATISTIQUES FÉDÉRATION (NOUVEAU)
+    # --- H - Statistiques Fédération ---
     StatistiquesCollectivite:
       type: object
       properties:
