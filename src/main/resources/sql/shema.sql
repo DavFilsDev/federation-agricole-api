@@ -1,4 +1,3 @@
-
 CREATE TYPE gender_enum AS ENUM ('MALE', 'FEMALE');
 CREATE TYPE member_occupation_enum AS ENUM ('JUNIOR', 'SENIOR', 'SECRETARY', 'TREASURER', 'VICE_PRESIDENT', 'PRESIDENT');
 
@@ -20,6 +19,8 @@ CREATE TABLE member (
 CREATE TABLE collectivity (
                               id SERIAL PRIMARY KEY,
                               location VARCHAR(255) NOT NULL,
+                              specialite_agricole VARCHAR(255) NOT NULL,
+                              annual_dues_amount INTEGER NOT NULL,
                               date_creation DATE NOT NULL,
                               federation_approval BOOLEAN NOT NULL
 );
@@ -39,15 +40,15 @@ CREATE TABLE membership (
 );
 
 CREATE TABLE reference (
-                             candidate_id INTEGER NOT NULL,
-                             sponsor_id INTEGER NOT NULL,
-                             relation_nature VARCHAR(50) NOT NULL,
-                             sponsorship_date DATE NOT NULL,
-                             PRIMARY KEY (candidate_id, sponsor_id),
-                             FOREIGN KEY (candidate_id) REFERENCES member(id) ON DELETE CASCADE,
-                             FOREIGN KEY (sponsor_id) REFERENCES member(id) ON DELETE CASCADE,
-                             CHECK (candidate_id != sponsor_id)
-);
+                           candidate_id INTEGER NOT NULL,
+                           sponsor_id INTEGER NOT NULL,
+                           relation_nature VARCHAR(50) NOT NULL,
+                           sponsorship_date DATE NOT NULL,
+                           PRIMARY KEY (candidate_id, sponsor_id),
+                           FOREIGN KEY (candidate_id) REFERENCES member(id) ON DELETE CASCADE,
+                           FOREIGN KEY (sponsor_id) REFERENCES member(id) ON DELETE CASCADE,
+                           CHECK (candidate_id != sponsor_id)
+    );
 
 -- Index
 CREATE INDEX idx_member_email ON member(email);
