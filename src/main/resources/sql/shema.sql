@@ -1,7 +1,6 @@
 CREATE TYPE gender_enum AS ENUM ('MALE', 'FEMALE');
 CREATE TYPE member_occupation_enum AS ENUM ('JUNIOR', 'SENIOR', 'SECRETARY', 'TREASURER', 'VICE_PRESIDENT', 'PRESIDENT');
 
--- 3. Table member
 CREATE TABLE member (
                         id SERIAL PRIMARY KEY,
                         first_name VARCHAR(100) NOT NULL,
@@ -15,7 +14,6 @@ CREATE TABLE member (
                         date_adhesion_federation DATE NOT NULL
 );
 
--- 4. Table collectivity
 CREATE TABLE collectivity (
                               id SERIAL PRIMARY KEY,
                               location VARCHAR(255) NOT NULL,
@@ -25,7 +23,6 @@ CREATE TABLE collectivity (
                               federation_approval BOOLEAN NOT NULL
 );
 
--- 5. Table membership
 CREATE TABLE membership (
                             member_id INTEGER NOT NULL,
                             collectivity_id INTEGER NOT NULL,
@@ -50,7 +47,6 @@ CREATE TABLE reference (
                            CHECK (candidate_id != sponsor_id)
     );
 
--- Index
 CREATE INDEX idx_member_email ON member(email);
 CREATE INDEX idx_membership_collectivity ON membership(collectivity_id);
 CREATE INDEX idx_sponsorship_sponsor ON reference(sponsor_id);
