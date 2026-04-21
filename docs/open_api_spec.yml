@@ -11,8 +11,8 @@ info:
     name: M. Ryan A.
 
 servers:
-  - url: https://api.federation-agricole.mg/v2
-    description: Serveur de production
+  - url: http://localhost:8080/v2
+    description: Serveur de developpement
 
 tags:
   - name: Collectivités (A)
