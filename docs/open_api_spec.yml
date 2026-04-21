@@ -33,7 +33,7 @@ tags:
     description: Rapports globaux mensuels et annuels de la fédération
 
 paths:
-  # ==================== A - OUVERTURE D'UNE NOUVELLE COLLECTIVITÉ ====================
+  # A - OUVERTURE D'UNE NOUVELLE COLLECTIVITÉ
   /collectivites:
     post:
       tags: [Collectivités (A)]
@@ -70,7 +70,7 @@ paths:
         '200':
           description: Autorisation accordée
 
-  # ==================== B - ADMISSION D'UN NOUVEAU MEMBRE (VERSION B-2) ====================
+  # B - ADMISSION D'UN NOUVEAU MEMBRE (VERSION B-2)
   /collectivites/{id}/membres/adhesion:
     post:
       tags: [Membres (B)]
@@ -146,7 +146,7 @@ paths:
         '200':
           description: Démission enregistrée
 
-  # ==================== C - COTISATION ET PAIEMENTS ====================
+  # C - COTISATION ET PAIEMENTS
   /collectivites/{id}/encaissements:
     post:
       tags: [Cotisations & Paiements (C)]
@@ -215,7 +215,7 @@ paths:
         '201':
           description: Reversement enregistré
 
-  # ==================== D - SITUATION DE TRÉSORERIE ====================
+  # D - SITUATION DE TRÉSORERIE
   /collectivites/{id}/comptes:
     get:
       tags: [Trésorerie & Comptes (D)]
@@ -273,7 +273,7 @@ paths:
         '200':
           description: Solde
 
-  # ==================== E - ACTIVITÉS ====================
+  # E - ACTIVITÉS
   /collectivites/{id}/activites:
     get:
       tags: [Activités (E)]
@@ -303,7 +303,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ActiviteInput'
 
-  # ==================== F - ASSIDUITÉ ====================
+  # F - ASSIDUITÉ
   /activites/{id}/presences:
     post:
       tags: [Assiduité (F)]
@@ -339,7 +339,7 @@ paths:
         '200':
           description: Taux d'assiduité
 
-  # ==================== G - STATISTIQUES COLLECTIVITÉ ====================
+  # G - STATISTIQUES COLLECTIVITÉ
   /collectivites/{id}/rapport-mensuel:
     post:
       tags: [Statistiques Collectivité (G)]
@@ -396,7 +396,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StatistiquesMembre'
 
-  # ==================== H - STATISTIQUES DE LA FÉDÉRATION (NOUVEAU) ====================
+  # H - STATISTIQUES DE LA FÉDÉRATION (NOUVEAU)
   /federation/rapports/mensuels:
     post:
       tags: [Statistiques Fédération (H)]
@@ -487,10 +487,10 @@ paths:
                 items:
                   $ref: '#/components/schemas/StatistiquesCollectivite'
 
-# ==================== SCHÉMAS ====================
+# SCHÉMAS
 components:
   schemas:
-    # --- A - Collectivités ---
+    # A - Collectivités
     CollectiviteInput:
       type: object
       required: [nom_unique, ville, specialite_agricole]
@@ -521,7 +521,7 @@ components:
               description: "Montant des cotisations annuelles obligatoires imposées par la collectivité"
               example: 200000
 
-    # --- B - Admission (Version B-2) ---
+    # B - Admission (Version B-2)
     ParrainageV2:
       type: object
       required:
@@ -637,7 +637,7 @@ components:
               nature_relation:
                 type: string
 
-    # --- C - Encaissements ---
+    # C - Encaissements
     EncaissementInput:
       type: object
       required:
@@ -661,7 +661,7 @@ components:
           type: string
           enum: [mensuelle, annuelle, ponctuelle]
 
-    # --- D - Comptes ---
+    # D - Comptes
     Compte:
       type: object
       discriminator:
@@ -714,7 +714,7 @@ components:
             numero_telephone:
               type: string
 
-    # --- E - Activités ---
+    # E - Activités
     ActiviteInput:
       type: object
       required: [titre, date_reference, obligation]
@@ -728,7 +728,7 @@ components:
           type: string
           enum: [tous, uniquement juniors, uniquement certains]
 
-    # --- F - Présences ---
+    # F - Présences
     PresenceInput:
       type: object
       required: [id_membre, present]
@@ -742,7 +742,7 @@ components:
         est_invite:
           type: boolean
 
-    # --- G - Statistiques Membre ---
+    # G - Statistiques Membre
     StatistiquesMembre:
       type: object
       properties:
@@ -757,7 +757,7 @@ components:
           type: number
           description: "Montant impayé potentiel sur la période"
 
-    # ==================== H - STATISTIQUES FÉDÉRATION (NOUVEAU) ====================
+    # H - STATISTIQUES FÉDÉRATION (NOUVEAU)
     StatistiquesCollectivite:
       type: object
       properties:
