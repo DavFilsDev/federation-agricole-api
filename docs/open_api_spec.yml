@@ -33,7 +33,7 @@ tags:
     description: Rapports globaux mensuels et annuels de la fédération
 
 paths:
-  # ==================== A - OUVERTURE D'UNE NOUVELLE COLLECTIVITÉ ====================
+  # A - OUVERTURE D'UNE NOUVELLE COLLECTIVITÉ
   /collectivites:
     post:
       tags: [Collectivités (A)]
@@ -80,7 +80,7 @@ paths:
         '409':
           description: Collectivité déjà autorisée
 
-  # ==================== B - ADMISSION D'UN NOUVEAU MEMBRE (VERSION B-2) ====================
+  # B - ADMISSION D'UN NOUVEAU MEMBRE (VERSION B-2)
   /collectivites/{id}/membres/adhesion:
     post:
       tags: [Membres (B)]
@@ -182,7 +182,7 @@ paths:
         '409':
           description: Membre déjà démissionnaire
 
-  # ==================== C - COTISATION ET PAIEMENTS ====================
+  # C - COTISATION ET PAIEMENTS
   /collectivites/{id}/encaissements:
     post:
       tags: [Cotisations & Paiements (C)]
@@ -276,7 +276,7 @@ paths:
         '404':
           description: Collectivité non trouvée
 
-  # ==================== D - SITUATION DE TRÉSORERIE ====================
+  # D - SITUATION DE TRÉSORERIE
   /collectivites/{id}/comptes:
     get:
       tags: [Trésorerie & Comptes (D)]
@@ -396,7 +396,7 @@ paths:
         '404':
           description: Compte non trouvé
 
-  # ==================== E - ACTIVITÉS ====================
+  # E - ACTIVITÉS
   /collectivites/{id}/activites:
     get:
       tags: [Activités (E)]
@@ -481,7 +481,7 @@ paths:
         '400':
           description: Données invalides
 
-  # ==================== F - ASSIDUITÉ ====================
+  # F - ASSIDUITÉ
   /activites/{id}/presences:
     post:
       tags: [Assiduité (F)]
@@ -555,7 +555,7 @@ paths:
         '404':
           description: Membre non trouvé
 
-  # ==================== G - STATISTIQUES COLLECTIVITÉ ====================
+  # G - STATISTIQUES COLLECTIVITÉ
   /collectivites/{id}/rapport-mensuel:
     post:
       tags: [Statistiques Collectivité (G)]
@@ -633,7 +633,7 @@ paths:
         '404':
           description: Collectivité ou membre non trouvé
 
-  # ==================== H - STATISTIQUES DE LA FÉDÉRATION (NOUVEAU) ====================
+  # H - STATISTIQUES DE LA FÉDÉRATION (NOUVEAU)
   /federation/rapports/mensuels:
     post:
       tags: [Statistiques Fédération (H)]
@@ -730,10 +730,10 @@ paths:
         '400':
           description: Dates invalides
 
-# ==================== SCHÉMAS ====================
+# SCHÉMAS
 components:
   schemas:
-    # --- A - Collectivités ---
+    # A - Collectivités
     CollectiviteInput:
       type: object
       required: [nom_unique, ville, specialite_agricole]
@@ -764,7 +764,7 @@ components:
               description: "Montant des cotisations annuelles obligatoires imposées par la collectivité"
               example: 200000
 
-    # --- B - Admission (Version B-2) ---
+    # B - Admission (Version B-2)
     ParrainageV2:
       type: object
       required:
@@ -879,7 +879,7 @@ components:
               nature_relation:
                 type: string
 
-    # --- C - Encaissements ---
+    # C - Encaissements
     EncaissementInput:
       type: object
       required:
@@ -929,7 +929,7 @@ components:
         pourcentage:
           type: number
 
-    # --- D - Comptes ---
+    # D - Comptes
     Compte:
       type: object
       discriminator:
@@ -997,7 +997,7 @@ components:
         numero_telephone:
           type: string
 
-    # --- E - Activités ---
+    # E - Activités
     ActiviteInput:
       type: object
       required: [titre, date_reference, obligation]
@@ -1032,7 +1032,7 @@ components:
           type: string
           format: date-time
 
-    # --- F - Présences ---
+    # F - Présences
     PresenceInput:
       type: object
       required: [id_membre, present]
@@ -1046,7 +1046,7 @@ components:
         est_invite:
           type: boolean
 
-    # --- G - Statistiques Membre ---
+    # G - Statistiques Membre
     StatistiquesMembre:
       type: object
       properties:
@@ -1061,7 +1061,7 @@ components:
           type: number
           description: "Montant impayé potentiel sur la période"
 
-    # --- H - Statistiques Fédération ---
+    # H - Statistiques Fédération
     StatistiquesCollectivite:
       type: object
       properties:
