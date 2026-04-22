@@ -1,4 +1,3 @@
-// exception/GlobalExceptionHandler.java
 package mg.federation.agricole.api.exception;
 
 import org.springframework.http.HttpStatus;

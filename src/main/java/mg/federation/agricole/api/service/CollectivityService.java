@@ -99,6 +99,9 @@ public class CollectivityService {
                 collectivityEntity.setAnnualDuesAmount(0);            // par défaut
                 collectivityEntity.setDateCreation(LocalDate.now());
                 collectivityEntity.setFederationApproval(true);
+                // uniqueNumber et uniqueName sont null à la création
+                collectivityEntity.setNumber(null);
+                collectivityEntity.setName(null);
                 Long collectivityId = collectivityRepository.insert(conn, collectivityEntity);
 
                 // 6. Insérer les membreships
@@ -129,31 +132,16 @@ public class CollectivityService {
                     membershipRepository.insert(conn, ms);
                 }
 
-                // 7. Construire l'objet de réponse
-                Collectivity response = new Collectivity();
-                response.setId(String.valueOf(collectivityId));
-                response.setLocation(create.getLocation());
-
-                // Récupérer tous les membres avec leurs infos complètes pour la réponse
-                Map<Long, Member> memberMap = new HashMap<>();
-                for (MemberEntity m : members) {
-                    Member dto = toMemberDto(m);
-                    memberMap.put(m.getId(), dto);
-                }
-
-                // Structure
-                CollectivityStructure respStruct = new CollectivityStructure();
-                respStruct.setPresident(memberMap.get(Long.parseLong(structure.getPresident())));
-                respStruct.setVicePresident(memberMap.get(Long.parseLong(structure.getVicePresident())));
-                respStruct.setTreasurer(memberMap.get(Long.parseLong(structure.getTreasurer())));
-                respStruct.setSecretary(memberMap.get(Long.parseLong(structure.getSecretary())));
-                response.setStructure(respStruct);
-
-                // Liste des membres (tous)
-                response.setMembers(new ArrayList<>(memberMap.values()));
+                // 7. Recharger l'entité collectivité pour avoir l'id et les champs à jour
+                CollectivityEntity savedEntity = collectivityRepository.findById(conn, collectivityId)
+                        .orElseThrow(() -> new RuntimeException("Collectivity not found after insertion"));
 
                 conn.commit();
-                return response;
+
+                // 8. Utiliser la méthode utilitaire toCollectivityDto pour construire la réponse
+                //    (cette méthode récupère les membres et la structure automatiquement)
+                return toCollectivityDto(savedEntity, conn);
+
             } catch (SQLException | RuntimeException e) {
                 conn.rollback();
                 throw e;
@@ -178,37 +166,104 @@ public class CollectivityService {
         return dto;
     }
 
-    public Collectivity assignIdentifiers(String collectivityIdStr, AssignIdentifiersRequest request) {
+    private Collectivity toCollectivityDto(CollectivityEntity entity, Connection conn) throws SQLException {
+        // Récupérer tous les membres de cette collectivité (via membership)
+        List<MembershipEntity> memberships = membershipRepository.findByCollectivityId(conn, entity.getId());
+
+        // Construire la map des membres (id -> Member DTO)
+        Map<Long, Member> memberMap = new HashMap<>();
+        for (MembershipEntity ms : memberships) {
+            Optional<MemberEntity> optMember = memberRepository.findById(conn, ms.getMemberId());
+            optMember.ifPresent(memberEntity -> {
+                Member memberDto = toMemberDto(memberEntity, null); // sans referees pour éviter récursion
+                memberMap.put(memberEntity.getId(), memberDto);
+            });
+        }
+
+        // Extraire la structure (président, vice-président, trésorier, secrétaire)
+        CollectivityStructure struct = new CollectivityStructure();
+        for (MembershipEntity ms : memberships) {
+            Member m = memberMap.get(ms.getMemberId());
+            if (m == null) continue;
+            switch (ms.getOccupation()) {
+                case "PRESIDENT":
+                    struct.setPresident(m);
+                    break;
+                case "VICE_PRESIDENT":
+                    struct.setVicePresident(m);
+                    break;
+                case "TREASURER":
+                    struct.setTreasurer(m);
+                    break;
+                case "SECRETARY":
+                    struct.setSecretary(m);
+                    break;
+            }
+        }
+
+        // Construction du DTO Collectivity
+        Collectivity dto = new Collectivity();
+        dto.setId(String.valueOf(entity.getId()));
+        dto.setLocation(entity.getLocation());
+        dto.setNumber(entity.getNumber());
+        dto.setName(entity.getName());
+        dto.setStructure(struct);
+        dto.setMembers(new ArrayList<>(memberMap.values()));
+
+        return dto;
+    }
+
+    private Member toMemberDto(MemberEntity entity, List<Member> referees) {
+        Member dto = new Member();
+        dto.setId(String.valueOf(entity.getId()));
+        dto.setFirstName(entity.getFirstName());
+        dto.setLastName(entity.getLastName());
+        dto.setBirthDate(entity.getBirthDate());
+        dto.setGender(Gender.valueOf(entity.getGender()));
+        dto.setAddress(entity.getAddress());
+        dto.setProfession(entity.getProfession());
+        dto.setPhoneNumber(entity.getPhoneNumber());
+        dto.setEmail(entity.getEmail());
+        // occupation n'est pas stocké dans MemberEntity, on peut le laisser null ou le récupérer ailleurs
+        dto.setReferees(referees);
+        return dto;
+    }
+
+    public Collectivity updateCollectivityInformation(String idStr, CollectivityInformation info) {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                Long collectivityId = Long.parseLong(collectivityIdStr);
-                // 1. Vérifier existence
-                CollectivityEntity entity = collectivityRepository.findById(conn, collectivityId)
+                Long id = Long.parseLong(idStr);
+
+                // Vérifier existence
+                CollectivityEntity entity = collectivityRepository.findById(conn, id)
                         .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found"));
 
-                // 2. Vérifier que les identifiants ne sont pas déjà assignés
-                if (collectivityRepository.hasIdentifiers(conn, collectivityId)) {
-                    throw new ConflictException("Collectivity already has unique number and name (immutable)");
+                // Vérifier si déjà nom et numéro (ne peut pas être modifié)
+                if (collectivityRepository.hasNameAndNumber(conn, id)) {
+                    throw new BusinessRuleException("Name and number already set (immutable)");
                 }
 
-                // 3. Vérifier unicité du numéro et du nom
-                if (collectivityRepository.isUniqueNumberExists(conn, request.getUniqueNumber(), collectivityId)) {
-                    throw new UnprocessableEntityException("Unique number already exists");
-                }
-                if (collectivityRepository.isUniqueNameExists(conn, request.getUniqueName(), collectivityId)) {
-                    throw new UnprocessableEntityException("Unique name already exists");
+                // Vérifier unicité du nom
+                if (collectivityRepository.isNameUsed(conn, info.getName(), id)) {
+                    throw new BusinessRuleException("Name already used by another collectivity");
                 }
 
-                // 4. Mettre à jour
-                collectivityRepository.updateIdentifiers(conn, collectivityId, request.getUniqueNumber(), request.getUniqueName());
+                // Vérifier unicité du numéro
+                if (collectivityRepository.isNumberUsed(conn, info.getNumber(), id)) {
+                    throw new BusinessRuleException("Number already used by another collectivity");
+                }
 
-                // 5. Recharger la collectivité complète pour la réponse
-                CollectivityEntity updated = collectivityRepository.findById(conn, collectivityId).get();
+                // Mettre à jour
+                collectivityRepository.updateNameAndNumber(conn, id, info.getName(), info.getNumber());
+
+                // Recharger l'entité
+                CollectivityEntity updated = collectivityRepository.findById(conn, id).get();
                 conn.commit();
 
-                // 6. Construire la réponse (réutiliser la méthode existante de mapping)
-                return toCollectivityDto(updated, conn); // à implémenter
+                // Convertir en DTO
+                return toCollectivityDto(updated, conn);
+
             } catch (SQLException e) {
                 conn.rollback();
                 throw new RuntimeException(e);

@@ -46,43 +46,43 @@ public class CollectivityRepository {
         }
     }
 
-    public boolean hasIdentifiers(Connection conn, Long id) throws SQLException {
-        String sql = "SELECT unique_number, unique_name FROM collectivity WHERE id = ?";
+    public boolean hasNameAndNumber(Connection conn, Long id) throws SQLException {
+        String sql = "SELECT name, number FROM collectivity WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, id);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                return rs.getString("unique_number") != null && rs.getString("unique_name") != null;
+                return rs.getString("name") != null && rs.getObject("number") != null;
             }
             return false;
         }
     }
 
-    public void updateIdentifiers(Connection conn, Long id, String uniqueNumber, String uniqueName) throws SQLException {
-        String sql = "UPDATE collectivity SET unique_number = ?, unique_name = ? WHERE id = ?";
+    public void updateNameAndNumber(Connection conn, Long id, String name, Integer number) throws SQLException {
+        String sql = "UPDATE collectivity SET name = ?, number = ? WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, uniqueNumber);
-            stmt.setString(2, uniqueName);
+            stmt.setString(1, name);
+            stmt.setInt(2, number);
             stmt.setLong(3, id);
             int updated = stmt.executeUpdate();
             if (updated == 0) throw new SQLException("Collectivity not found");
         }
     }
 
-    public boolean isUniqueNumberExists(Connection conn, String uniqueNumber, Long excludeId) throws SQLException {
-        String sql = "SELECT 1 FROM collectivity WHERE unique_number = ? AND id != ?";
+    public boolean isNameUsed(Connection conn, String name, Long excludeId) throws SQLException {
+        String sql = "SELECT 1 FROM collectivity WHERE name = ? AND id != ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, uniqueNumber);
+            stmt.setString(1, name);
             stmt.setLong(2, excludeId);
             ResultSet rs = stmt.executeQuery();
             return rs.next();
         }
     }
 
-    public boolean isUniqueNameExists(Connection conn, String uniqueName, Long excludeId) throws SQLException {
-        String sql = "SELECT 1 FROM collectivity WHERE unique_name = ? AND id != ?";
+    public boolean isNumberUsed(Connection conn, Integer number, Long excludeId) throws SQLException {
+        String sql = "SELECT 1 FROM collectivity WHERE number = ? AND id != ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, uniqueName);
+            stmt.setInt(1, number);
             stmt.setLong(2, excludeId);
             ResultSet rs = stmt.executeQuery();
             return rs.next();
