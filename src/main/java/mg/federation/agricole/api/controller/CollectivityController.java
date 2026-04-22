@@ -1,6 +1,7 @@
 // controller/CollectivityController.java
 package mg.federation.agricole.api.controller;
 
+import mg.federation.agricole.api.dto.AssignIdentifiersRequest;
 import mg.federation.agricole.api.dto.Collectivity;
 import mg.federation.agricole.api.dto.CreateCollectivity;
 import mg.federation.agricole.api.service.CollectivityService;
@@ -23,5 +24,13 @@ public class CollectivityController {
     public ResponseEntity<List<Collectivity>> createCollectivities(@RequestBody List<CreateCollectivity> createList) {
         List<Collectivity> result = collectivityService.createCollectivities(createList);
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
+
+    @PostMapping("/collectivities/{id}/identifiers")
+    public ResponseEntity<Collectivity> assignIdentifiers(
+            @PathVariable String id,
+            @RequestBody AssignIdentifiersRequest request) {
+        Collectivity updated = collectivityService.assignIdentifiers(id, request);
+        return ResponseEntity.ok(updated);
     }
 }

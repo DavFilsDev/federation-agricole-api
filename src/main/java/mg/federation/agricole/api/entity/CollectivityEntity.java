@@ -9,6 +9,8 @@ public class CollectivityEntity {
     private Integer annualDuesAmount;
     private LocalDate dateCreation;
     private Boolean federationApproval;
+    private String uniqueNumber;
+    private String uniqueName;
 
     // getters/setters
 
@@ -68,5 +70,21 @@ public class CollectivityEntity {
 
     public void setFederationApproval(Boolean federationApproval) {
         this.federationApproval = federationApproval;
+    }
+
+    public String getUniqueNumber() {
+        return uniqueNumber;
+    }
+
+    public void setUniqueNumber(String uniqueNumber) {
+        this.uniqueNumber = uniqueNumber;
+    }
+
+    public String getUniqueName() {
+        return uniqueName;
+    }
+
+    public void setUniqueName(String uniqueName) {
+        this.uniqueName = uniqueName;
     }
 }

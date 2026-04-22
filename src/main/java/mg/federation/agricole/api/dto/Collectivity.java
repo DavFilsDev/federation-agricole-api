@@ -7,6 +7,8 @@ public class Collectivity {
     private String location;
     private CollectivityStructure structure;
     private List<Member> members;
+    private String uniqueNumber;
+    private String uniqueName;
 
     public String getId() {
         return id;
@@ -38,5 +40,21 @@ public class Collectivity {
 
     public void setMembers(List<Member> members) {
         this.members = members;
+    }
+
+    public String getUniqueNumber() {
+        return uniqueNumber;
+    }
+
+    public void setUniqueNumber(String uniqueNumber) {
+        this.uniqueNumber = uniqueNumber;
+    }
+
+    public String getUniqueName() {
+        return uniqueName;
+    }
+
+    public void setUniqueName(String uniqueName) {
+        this.uniqueName = uniqueName;
     }
 }

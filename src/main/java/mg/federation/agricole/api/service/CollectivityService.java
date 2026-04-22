@@ -177,4 +177,44 @@ public class CollectivityService {
         // occupation non disponible ici, on met null
         return dto;
     }
+
+    public Collectivity assignIdentifiers(String collectivityIdStr, AssignIdentifiersRequest request) {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                Long collectivityId = Long.parseLong(collectivityIdStr);
+                // 1. Vérifier existence
+                CollectivityEntity entity = collectivityRepository.findById(conn, collectivityId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found"));
+
+                // 2. Vérifier que les identifiants ne sont pas déjà assignés
+                if (collectivityRepository.hasIdentifiers(conn, collectivityId)) {
+                    throw new ConflictException("Collectivity already has unique number and name (immutable)");
+                }
+
+                // 3. Vérifier unicité du numéro et du nom
+                if (collectivityRepository.isUniqueNumberExists(conn, request.getUniqueNumber(), collectivityId)) {
+                    throw new UnprocessableEntityException("Unique number already exists");
+                }
+                if (collectivityRepository.isUniqueNameExists(conn, request.getUniqueName(), collectivityId)) {
+                    throw new UnprocessableEntityException("Unique name already exists");
+                }
+
+                // 4. Mettre à jour
+                collectivityRepository.updateIdentifiers(conn, collectivityId, request.getUniqueNumber(), request.getUniqueName());
+
+                // 5. Recharger la collectivité complète pour la réponse
+                CollectivityEntity updated = collectivityRepository.findById(conn, collectivityId).get();
+                conn.commit();
+
+                // 6. Construire la réponse (réutiliser la méthode existante de mapping)
+                return toCollectivityDto(updated, conn); // à implémenter
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new RuntimeException(e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

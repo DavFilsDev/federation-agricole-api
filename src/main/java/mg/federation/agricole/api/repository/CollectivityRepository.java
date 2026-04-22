@@ -45,4 +45,47 @@ public class CollectivityRepository {
             return Optional.empty();
         }
     }
+
+    public boolean hasIdentifiers(Connection conn, Long id) throws SQLException {
+        String sql = "SELECT unique_number, unique_name FROM collectivity WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("unique_number") != null && rs.getString("unique_name") != null;
+            }
+            return false;
+        }
+    }
+
+    public void updateIdentifiers(Connection conn, Long id, String uniqueNumber, String uniqueName) throws SQLException {
+        String sql = "UPDATE collectivity SET unique_number = ?, unique_name = ? WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, uniqueNumber);
+            stmt.setString(2, uniqueName);
+            stmt.setLong(3, id);
+            int updated = stmt.executeUpdate();
+            if (updated == 0) throw new SQLException("Collectivity not found");
+        }
+    }
+
+    public boolean isUniqueNumberExists(Connection conn, String uniqueNumber, Long excludeId) throws SQLException {
+        String sql = "SELECT 1 FROM collectivity WHERE unique_number = ? AND id != ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, uniqueNumber);
+            stmt.setLong(2, excludeId);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
+        }
+    }
+
+    public boolean isUniqueNameExists(Connection conn, String uniqueName, Long excludeId) throws SQLException {
+        String sql = "SELECT 1 FROM collectivity WHERE unique_name = ? AND id != ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, uniqueName);
+            stmt.setLong(2, excludeId);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
+        }
+    }
 }
