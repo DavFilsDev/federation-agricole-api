@@ -20,6 +20,8 @@ CREATE TABLE member (
 CREATE TABLE collectivity (
                               id SERIAL PRIMARY KEY,
                               location VARCHAR(255) NOT NULL,
+                              specialite_agricole VARCHAR(255) NOT NULL,
+                              annual_dues_amount INTEGER NOT NULL,
                               date_creation DATE NOT NULL,
                               federation_approval BOOLEAN NOT NULL
 );
