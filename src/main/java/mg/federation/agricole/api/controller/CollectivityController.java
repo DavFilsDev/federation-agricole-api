@@ -1,8 +1,7 @@
-// controller/CollectivityController.java
 package mg.federation.agricole.api.controller;
 
-import mg.federation.agricole.api.dto.AssignIdentifiersRequest;
 import mg.federation.agricole.api.dto.Collectivity;
+import mg.federation.agricole.api.dto.CollectivityInformation;
 import mg.federation.agricole.api.dto.CreateCollectivity;
 import mg.federation.agricole.api.service.CollectivityService;
 import org.springframework.http.HttpStatus;
@@ -26,11 +25,11 @@ public class CollectivityController {
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
-    @PostMapping("/collectivities/{id}/identifiers")
-    public ResponseEntity<Collectivity> assignIdentifiers(
+    @PutMapping("/collectivities/{id}/informations")
+    public ResponseEntity<Collectivity> updateCollectivityInformation(
             @PathVariable String id,
-            @RequestBody AssignIdentifiersRequest request) {
-        Collectivity updated = collectivityService.assignIdentifiers(id, request);
+            @RequestBody CollectivityInformation info) {
+        Collectivity updated = collectivityService.updateCollectivityInformation(id, info);
         return ResponseEntity.ok(updated);
     }
 }

@@ -9,10 +9,8 @@ public class CollectivityEntity {
     private Integer annualDuesAmount;
     private LocalDate dateCreation;
     private Boolean federationApproval;
-    private String uniqueNumber;
-    private String uniqueName;
-
-    // getters/setters
+    private String name;
+    private Integer number;
 
     public CollectivityEntity(Long id, String location, String specialiteAgricole, Integer annualDuesAmount, LocalDate dateCreation, Boolean federationApproval) {
         this.id = id;
@@ -72,19 +70,19 @@ public class CollectivityEntity {
         this.federationApproval = federationApproval;
     }
 
-    public String getUniqueNumber() {
-        return uniqueNumber;
+    public String getName() {
+        return name;
     }
 
-    public void setUniqueNumber(String uniqueNumber) {
-        this.uniqueNumber = uniqueNumber;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getUniqueName() {
-        return uniqueName;
+    public Integer getNumber() {
+        return number;
     }
 
-    public void setUniqueName(String uniqueName) {
-        this.uniqueName = uniqueName;
+    public void setNumber(Integer number) {
+        this.number = number;
     }
 }

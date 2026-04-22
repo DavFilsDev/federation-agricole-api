@@ -5,9 +5,7 @@ import mg.federation.agricole.api.config.DataSource;
 import mg.federation.agricole.api.dto.*;
 import mg.federation.agricole.api.entity.*;
 import mg.federation.agricole.api.exception.BusinessRuleException;
-import mg.federation.agricole.api.exception.ConflictException;
 import mg.federation.agricole.api.exception.ResourceNotFoundException;
-import mg.federation.agricole.api.exception.UnprocessableEntityException;
 import mg.federation.agricole.api.repository.*;
 import org.springframework.stereotype.Service;
 
@@ -102,8 +100,8 @@ public class CollectivityService {
                 collectivityEntity.setDateCreation(LocalDate.now());
                 collectivityEntity.setFederationApproval(true);
                 // uniqueNumber et uniqueName sont null à la création
-                collectivityEntity.setUniqueNumber(null);
-                collectivityEntity.setUniqueName(null);
+                collectivityEntity.setNumber(null);
+                collectivityEntity.setName(null);
                 Long collectivityId = collectivityRepository.insert(conn, collectivityEntity);
 
                 // 6. Insérer les membreships
@@ -207,8 +205,8 @@ public class CollectivityService {
         Collectivity dto = new Collectivity();
         dto.setId(String.valueOf(entity.getId()));
         dto.setLocation(entity.getLocation());
-        dto.setUniqueNumber(entity.getUniqueNumber());
-        dto.setUniqueName(entity.getUniqueName());
+        dto.setNumber(entity.getNumber());
+        dto.setName(entity.getName());
         dto.setStructure(struct);
         dto.setMembers(new ArrayList<>(memberMap.values()));
 
@@ -231,38 +229,39 @@ public class CollectivityService {
         return dto;
     }
 
-    public Collectivity assignIdentifiers(String collectivityIdStr, AssignIdentifiersRequest request) {
+    public Collectivity updateCollectivityInformation(String idStr, CollectivityInformation info) {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                Long collectivityId = Long.parseLong(collectivityIdStr);
+                Long id = Long.parseLong(idStr);
+
                 // Vérifier existence
-                CollectivityEntity entity = collectivityRepository.findById(conn, collectivityId)
+                CollectivityEntity entity = collectivityRepository.findById(conn, id)
                         .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found"));
 
-                // Vérifier que les identifiants ne sont pas déjà assignés
-                if (entity.getUniqueNumber() != null && entity.getUniqueName() != null) {
-                    throw new ConflictException("Collectivity already has unique number and name (immutable)");
+                // Vérifier si déjà nom et numéro (ne peut pas être modifié)
+                if (collectivityRepository.hasNameAndNumber(conn, id)) {
+                    throw new BusinessRuleException("Name and number already set (immutable)");
                 }
 
-                // Vérifier unicité du numéro et du nom (autre collectivité)
-                if (collectivityRepository.isUniqueNumberExists(conn, request.getUniqueNumber(), collectivityId)) {
-                    throw new UnprocessableEntityException("Unique number already exists");
+                // Vérifier unicité du nom
+                if (collectivityRepository.isNameUsed(conn, info.getName(), id)) {
+                    throw new BusinessRuleException("Name already used by another collectivity");
                 }
-                if (collectivityRepository.isUniqueNameExists(conn, request.getUniqueName(), collectivityId)) {
-                    throw new UnprocessableEntityException("Unique name already exists");
+
+                // Vérifier unicité du numéro
+                if (collectivityRepository.isNumberUsed(conn, info.getNumber(), id)) {
+                    throw new BusinessRuleException("Number already used by another collectivity");
                 }
 
                 // Mettre à jour
-                collectivityRepository.updateIdentifiers(conn, collectivityId, request.getUniqueNumber(), request.getUniqueName());
+                collectivityRepository.updateNameAndNumber(conn, id, info.getName(), info.getNumber());
 
-                // Recharger l'entité mise à jour
-                CollectivityEntity updated = collectivityRepository.findById(conn, collectivityId)
-                        .orElseThrow(() -> new RuntimeException("Collectivity disappeared"));
-
+                // Recharger l'entité
+                CollectivityEntity updated = collectivityRepository.findById(conn, id).get();
                 conn.commit();
 
-                // Construire et retourner le DTO complet
+                // Convertir en DTO
                 return toCollectivityDto(updated, conn);
 
             } catch (SQLException e) {

@@ -7,8 +7,8 @@ public class Collectivity {
     private String location;
     private CollectivityStructure structure;
     private List<Member> members;
-    private String uniqueNumber;
-    private String uniqueName;
+    private String name;        // ← ajouter
+    private Integer number;
 
     public String getId() {
         return id;
@@ -42,19 +42,19 @@ public class Collectivity {
         this.members = members;
     }
 
-    public String getUniqueNumber() {
-        return uniqueNumber;
+    public String getName() {
+        return name;
     }
 
-    public void setUniqueNumber(String uniqueNumber) {
-        this.uniqueNumber = uniqueNumber;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getUniqueName() {
-        return uniqueName;
+    public Integer getNumber() {
+        return number;
     }
 
-    public void setUniqueName(String uniqueName) {
-        this.uniqueName = uniqueName;
+    public void setNumber(Integer number) {
+        this.number = number;
     }
 }
