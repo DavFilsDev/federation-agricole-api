@@ -28,4 +28,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Internal server error: " + e.getMessage()));
     }
+
+    // Dans GlobalExceptionHandler
+    @ExceptionHandler(UnprocessableEntityException.class)
+    public ResponseEntity<Map<String, String>> handleUnprocessable(UnprocessableEntityException e) {
+        return ResponseEntity
+                .status(422)
+                .body(Map.of("error", e.getMessage()));
+    }
 }
