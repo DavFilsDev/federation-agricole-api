@@ -13,17 +13,17 @@ import java.util.Optional;
 @Repository
 public class MembershipFeeRepository {
 
-    public List<MembershipFeeEntity> findByCollectivityId(Connection conn, Long collectivityId) throws SQLException {
+    public List<MembershipFeeEntity> findByCollectivityId(Connection conn, String collectivityId) throws SQLException {
         String sql = "SELECT id, collectivity_id, eligible_from, frequency, amount, label, status " +
                 "FROM membership_fee WHERE collectivity_id = ? ORDER BY eligible_from DESC";
         List<MembershipFeeEntity> fees = new ArrayList<>();
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, collectivityId);
+            stmt.setString(1, collectivityId);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 MembershipFeeEntity fee = new MembershipFeeEntity();
-                fee.setId(rs.getLong("id"));
-                fee.setCollectivityId(rs.getLong("collectivity_id"));
+                fee.setId(rs.getString("id"));
+                fee.setCollectivityId(rs.getString("collectivity_id"));
                 fee.setEligibleFrom(rs.getDate("eligible_from").toLocalDate());
                 fee.setFrequency(rs.getString("frequency"));
                 fee.setAmount(rs.getBigDecimal("amount"));
@@ -35,30 +35,26 @@ public class MembershipFeeRepository {
         return fees;
     }
 
-    // Nouvelle méthode : insérer un frais de cotisation
-    public Long insert(Connection conn, MembershipFeeEntity fee) throws SQLException {
-        String sql = "INSERT INTO membership_fee (collectivity_id, eligible_from, frequency, amount, label, status) " +
-                "VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
+    // MODIFICATION 2: insert avec id explicite (plus de RETURNING id)
+    public void insert(Connection conn, MembershipFeeEntity fee) throws SQLException {
+        String sql = "INSERT INTO membership_fee (id, collectivity_id, eligible_from, frequency, amount, label, status) " +
+                "VALUES (?, ?, ?, CAST(? as frequency_enum), ?, ?, CAST(? as activity_status_enum))";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, fee.getCollectivityId());
-            stmt.setDate(2, Date.valueOf(fee.getEligibleFrom()));
-            stmt.setString(3, fee.getFrequency());
-            stmt.setBigDecimal(4, fee.getAmount());
-            stmt.setString(5, fee.getLabel());
-            stmt.setString(6, fee.getStatus() != null ? fee.getStatus() : "ACTIVE");
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-            throw new SQLException("Insert failed, no ID returned");
+            stmt.setString(1, fee.getId());
+            stmt.setString(2, fee.getCollectivityId());
+            stmt.setDate(3, Date.valueOf(fee.getEligibleFrom()));
+            stmt.setString(4, fee.getFrequency());
+            stmt.setBigDecimal(5, fee.getAmount());
+            stmt.setString(6, fee.getLabel());
+            stmt.setString(7, fee.getStatus() != null ? fee.getStatus() : "ACTIVE");
+            stmt.executeUpdate();
         }
     }
 
-    // Vérifier si un frais de cotisation existe déjà avec les mêmes caractéristiques (optionnel)
-    public boolean existsDuplicate(Connection conn, Long collectivityId, LocalDate eligibleFrom, String frequency, BigDecimal amount) throws SQLException {
+    public boolean existsDuplicate(Connection conn, String collectivityId, LocalDate eligibleFrom, String frequency, BigDecimal amount) throws SQLException {
         String sql = "SELECT 1 FROM membership_fee WHERE collectivity_id = ? AND eligible_from = ? AND frequency = ? AND amount = ? LIMIT 1";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, collectivityId);
+            stmt.setString(1, collectivityId);
             stmt.setDate(2, Date.valueOf(eligibleFrom));
             stmt.setString(3, frequency);
             stmt.setBigDecimal(4, amount);
@@ -67,16 +63,16 @@ public class MembershipFeeRepository {
         }
     }
 
-    public Optional<MembershipFeeEntity> findById(Connection conn, Long id) throws SQLException {
+    public Optional<MembershipFeeEntity> findById(Connection conn, String id) throws SQLException {
         String sql = "SELECT id, collectivity_id, eligible_from, frequency, amount, label, status " +
                 "FROM membership_fee WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, id);
+            stmt.setString(1, id);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 MembershipFeeEntity fee = new MembershipFeeEntity();
-                fee.setId(rs.getLong("id"));
-                fee.setCollectivityId(rs.getLong("collectivity_id"));
+                fee.setId(rs.getString("id"));
+                fee.setCollectivityId(rs.getString("collectivity_id"));
                 fee.setEligibleFrom(rs.getDate("eligible_from").toLocalDate());
                 fee.setFrequency(rs.getString("frequency"));
                 fee.setAmount(rs.getBigDecimal("amount"));

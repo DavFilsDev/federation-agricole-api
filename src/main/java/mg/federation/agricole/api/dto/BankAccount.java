@@ -1,7 +1,9 @@
 package mg.federation.agricole.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BankAccount implements FinancialAccount {
     private String id;
     private String holderName;
@@ -11,6 +13,7 @@ public class BankAccount implements FinancialAccount {
     private Integer bankAccountNumber;
     private Integer bankAccountKey;
     private BigDecimal amount;
+    private String type = "BANK";
 
     public BankAccount() {}
 
@@ -39,4 +42,7 @@ public class BankAccount implements FinancialAccount {
     @Override
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 }

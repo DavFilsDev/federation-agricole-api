@@ -14,7 +14,7 @@ import java.math.BigDecimal;
         @JsonSubTypes.Type(value = MobileBankingAccount.class, name = "MOBILE_BANKING"),
         @JsonSubTypes.Type(value = BankAccount.class, name = "BANK")
 })
-public interface FinancialAccount {
+public interface FinancialAccountResponse {
     String getId();
     BigDecimal getAmount();
 }

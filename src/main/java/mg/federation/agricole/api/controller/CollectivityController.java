@@ -32,4 +32,10 @@ public class CollectivityController {
         Collectivity updated = collectivityService.updateCollectivityInformation(id, info);
         return ResponseEntity.ok(updated);
     }
+
+    @GetMapping("/collectivities/{id}")
+    public ResponseEntity<Collectivity> getCollectivityById(@PathVariable String id) {
+        Collectivity collectivity = collectivityService.getCollectivityById(id);
+        return ResponseEntity.ok(collectivity);
+    }
 }

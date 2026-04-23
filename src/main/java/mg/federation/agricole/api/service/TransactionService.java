@@ -40,7 +40,6 @@ public class TransactionService {
     }
 
     public List<CollectivityTransaction> getCollectivityTransactions(String collectivityIdStr, LocalDate from, LocalDate to) {
-        // Validation des dates
         if (from == null || to == null) {
             throw new BusinessRuleException("Query parameters 'from' and 'to' are mandatory");
         }
@@ -50,30 +49,25 @@ public class TransactionService {
         }
 
         try (Connection conn = dataSource.getConnection()) {
-            Long collectivityId = Long.parseLong(collectivityIdStr);
+            String collectivityId = collectivityIdStr;
 
-            // Vérifier que la collectivité existe
             if (collectivityRepository.findById(conn, collectivityId).isEmpty()) {
                 throw new ResourceNotFoundException("Collectivity not found with id: " + collectivityIdStr);
             }
 
-            // Récupérer les transactions
             List<TransactionEntity> entities = transactionRepository.findByCollectivityIdAndDateRange(conn, collectivityId, from, to);
 
-            // Convertir en DTOs
             List<CollectivityTransaction> transactions = new ArrayList<>();
             for (TransactionEntity entity : entities) {
                 CollectivityTransaction dto = new CollectivityTransaction();
-                dto.setId(String.valueOf(entity.getId()));
+                dto.setId(entity.getId());
                 dto.setCreationDate(entity.getCreationDate());
                 dto.setAmount(entity.getAmount());
                 dto.setPaymentMode(entity.getPaymentMode());
 
-                // Récupérer le compte crédité
                 Optional<FinancialAccount> accountOpt = financialAccountRepository.findById(conn, entity.getAccountCreditedId());
                 accountOpt.ifPresent(dto::setAccountCredited);
 
-                // Récupérer le membre débiteur
                 Optional<MemberEntity> memberOpt = memberRepository.findById(conn, entity.getMemberId());
                 if (memberOpt.isPresent()) {
                     Member memberDto = toMemberDto(memberOpt.get(), null);
@@ -92,7 +86,7 @@ public class TransactionService {
 
     private Member toMemberDto(MemberEntity entity, List<Member> referees) {
         Member dto = new Member();
-        dto.setId(String.valueOf(entity.getId()));
+        dto.setId(entity.getId());
         dto.setFirstName(entity.getFirstName());
         dto.setLastName(entity.getLastName());
         dto.setBirthDate(entity.getBirthDate());

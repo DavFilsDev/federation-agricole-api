@@ -11,25 +11,25 @@ import java.util.List;
 @Repository
 public class TransactionRepository {
 
-    public List<TransactionEntity> findByCollectivityIdAndDateRange(Connection conn, Long collectivityId, LocalDate from, LocalDate to) throws SQLException {
+    public List<TransactionEntity> findByCollectivityIdAndDateRange(Connection conn, String collectivityId, LocalDate from, LocalDate to) throws SQLException {
         String sql = "SELECT id, member_id, collectivity_id, amount, payment_mode, account_credited_id, membership_fee_id, creation_date " +
                 "FROM transaction WHERE collectivity_id = ? AND creation_date BETWEEN ? AND ? " +
                 "ORDER BY creation_date DESC";
         List<TransactionEntity> transactions = new ArrayList<>();
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, collectivityId);
+            stmt.setString(1, collectivityId);
             stmt.setDate(2, Date.valueOf(from));
             stmt.setDate(3, Date.valueOf(to));
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 TransactionEntity transaction = new TransactionEntity();
-                transaction.setId(rs.getLong("id"));
-                transaction.setMemberId(rs.getLong("member_id"));
-                transaction.setCollectivityId(rs.getLong("collectivity_id"));
+                transaction.setId(rs.getString("id"));
+                transaction.setMemberId(rs.getString("member_id"));
+                transaction.setCollectivityId(rs.getString("collectivity_id"));
                 transaction.setAmount(rs.getBigDecimal("amount"));
                 transaction.setPaymentMode(rs.getString("payment_mode"));
-                transaction.setAccountCreditedId(rs.getLong("account_credited_id"));
-                Long feeId = rs.getLong("membership_fee_id");
+                transaction.setAccountCreditedId(rs.getString("account_credited_id"));
+                String feeId = rs.getString("membership_fee_id");
                 if (!rs.wasNull()) {
                     transaction.setMembershipFeeId(feeId);
                 }
@@ -40,26 +40,23 @@ public class TransactionRepository {
         return transactions;
     }
 
-    public Long insert(Connection conn, TransactionEntity transaction) throws SQLException {
-        String sql = "INSERT INTO transaction (member_id, collectivity_id, amount, payment_mode, account_credited_id, membership_fee_id, creation_date) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id";
+    public void insert(Connection conn, TransactionEntity transaction) throws SQLException {
+        String sql = "INSERT INTO transaction (id, member_id, collectivity_id, amount, payment_mode, account_credited_id, membership_fee_id, creation_date) " +
+                "VALUES (?, ?, ?, ?, CAST(? as payment_mode_enum), ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, transaction.getMemberId());
-            stmt.setLong(2, transaction.getCollectivityId());
-            stmt.setBigDecimal(3, transaction.getAmount());
-            stmt.setString(4, transaction.getPaymentMode());
-            stmt.setLong(5, transaction.getAccountCreditedId());
+            stmt.setString(1, transaction.getId());
+            stmt.setString(2, transaction.getMemberId());
+            stmt.setString(3, transaction.getCollectivityId());
+            stmt.setBigDecimal(4, transaction.getAmount());
+            stmt.setString(5, transaction.getPaymentMode());
+            stmt.setString(6, transaction.getAccountCreditedId());
             if (transaction.getMembershipFeeId() != null) {
-                stmt.setLong(6, transaction.getMembershipFeeId());
+                stmt.setString(7, transaction.getMembershipFeeId());
             } else {
-                stmt.setNull(6, Types.BIGINT);
+                stmt.setNull(7, Types.VARCHAR);
             }
-            stmt.setDate(7, Date.valueOf(transaction.getCreationDate()));
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-            throw new SQLException("Insert failed, no ID returned");
+            stmt.setDate(8, Date.valueOf(transaction.getCreationDate()));
+            stmt.executeUpdate();
         }
     }
 }
