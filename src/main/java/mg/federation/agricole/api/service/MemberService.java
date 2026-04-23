@@ -48,30 +48,37 @@ public class MemberService {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // 1. Vérifier que la collectivité cible existe
-                Long collectivityId = Long.parseLong(create.getCollectivityIdentifier());
+                // 1. Vérifier que la collectivité cible existe (ID en String)
+                String collectivityId = create.getCollectivityIdentifier();  // MODIFICATION: plus de parsing
                 CollectivityEntity collectivity = collectivityRepository.findById(conn, collectivityId)
                         .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found"));
 
-                // 2. Vérifier les parrains (au moins 2)
-                List<String> refereeIdsStr = create.getReferees();
-                if (refereeIdsStr == null || refereeIdsStr.size() < 2) {
-                    throw new BusinessRuleException("At least 2 referees required");
-                }
-                List<Long> refereeIds = refereeIdsStr.stream().map(Long::parseLong).collect(Collectors.toList());
+                // MODIFICATION: Compter les membres existants pour la règle du premier membre
+                int totalMembers = memberRepository.countAll(conn);
+                boolean isFirstMember = (totalMembers == 0);
 
-                // Vérifier que chaque parrain existe et a le rôle SENIOR
-                for (Long rid : refereeIds) {
-                    if (!membershipRepository.hasSeniorRole(conn, rid)) {
-                        throw new BusinessRuleException("Referee " + rid + " is not a SENIOR member");
+                // 2. Vérifier les parrains (selon que c'est le premier membre ou non)
+                List<String> refereeIds = null;  // MODIFICATION: List<String> au lieu de List<Long>
+                if (!isFirstMember) {
+                    List<String> refereeIdsStr = create.getReferees();
+                    if (refereeIdsStr == null || refereeIdsStr.size() < 2) {
+                        throw new BusinessRuleException("At least 2 referees required");
                     }
-                }
+                    refereeIds = refereeIdsStr;  // MODIFICATION: plus de conversion en Long
 
-                // 3. Règle de proportion
-                int countInTarget = membershipRepository.countRefereesInCollectivity(conn, refereeIds, collectivityId);
-                int countOutside = refereeIds.size() - countInTarget;
-                if (countInTarget < countOutside) {
-                    throw new BusinessRuleException("Number of referees from target collectivity must be at least equal to outsiders");
+                    // Vérifier que chaque parrain existe et a le rôle SENIOR
+                    for (String rid : refereeIds) {
+                        if (!membershipRepository.hasSeniorRole(conn, rid)) {
+                            throw new BusinessRuleException("Referee " + rid + " is not a SENIOR member");
+                        }
+                    }
+
+                    // 3. Règle de proportion
+                    int countInTarget = membershipRepository.countRefereesInCollectivity(conn, refereeIds, collectivityId);
+                    int countOutside = refereeIds.size() - countInTarget;
+                    if (countInTarget < countOutside) {
+                        throw new BusinessRuleException("Number of referees from target collectivity must be at least equal to outsiders");
+                    }
                 }
 
                 // 4. Vérifier les paiements
@@ -82,8 +89,10 @@ public class MemberService {
                     throw new BusinessRuleException("Membership dues must be paid");
                 }
 
-                // 5. Insérer le membre
+                // 5. Insérer le membre avec génération d'ID
+                String memberId = generateMemberId();  // MODIFICATION: générer un ID String
                 MemberEntity newMember = new MemberEntity();
+                newMember.setId(memberId);  // MODIFICATION: setter l'ID
                 newMember.setFirstName(create.getFirstName());
                 newMember.setLastName(create.getLastName());
                 newMember.setBirthDate(create.getBirthDate());
@@ -93,7 +102,7 @@ public class MemberService {
                 newMember.setPhoneNumber(create.getPhoneNumber());
                 newMember.setEmail(create.getEmail());
                 newMember.setDateAdhesionFederation(LocalDate.now());
-                Long memberId = memberRepository.insert(conn, newMember);
+                memberRepository.insert(conn, newMember);  // MODIFICATION: plus de retour d'ID
 
                 // 6. Insérer membership
                 MembershipEntity membership = new MembershipEntity();
@@ -106,22 +115,26 @@ public class MemberService {
                 membership.setPaymentDate(LocalDate.now());
                 membershipRepository.insert(conn, membership);
 
-                // 7. Insérer les parrainages (références)
-                LocalDate now = LocalDate.now();
-                for (Long sponsorId : refereeIds) {
-                    ReferenceEntity ref = new ReferenceEntity();
-                    ref.setCandidateId(memberId);
-                    ref.setSponsorId(sponsorId);
-                    ref.setRelationNature("unknown");  // non fourni par la spec
-                    ref.setSponsorshipDate(now);
-                    referenceRepository.insert(conn, ref);
+                // 7. Insérer les parrainages (uniquement si ce n'est pas le premier membre)
+                if (!isFirstMember && refereeIds != null && !refereeIds.isEmpty()) {
+                    LocalDate now = LocalDate.now();
+                    for (String sponsorId : refereeIds) {
+                        ReferenceEntity ref = new ReferenceEntity();
+                        ref.setCandidateId(memberId);
+                        ref.setSponsorId(sponsorId);
+                        ref.setRelationNature("unknown");
+                        ref.setSponsorshipDate(now);
+                        referenceRepository.insert(conn, ref);
+                    }
                 }
 
                 // 8. Construire la réponse : récupérer tous les parrains complets
                 List<Member> refereeDtos = new ArrayList<>();
-                for (Long rid : refereeIds) {
-                    Optional<MemberEntity> optRef = memberRepository.findById(conn, rid);
-                    optRef.ifPresent(refEntity -> refereeDtos.add(toMemberDto(refEntity, null)));
+                if (!isFirstMember && refereeIds != null) {
+                    for (String rid : refereeIds) {
+                        Optional<MemberEntity> optRef = memberRepository.findById(conn, rid);
+                        optRef.ifPresent(refEntity -> refereeDtos.add(toMemberDto(refEntity, null)));
+                    }
                 }
 
                 Member response = toMemberDto(newMember, refereeDtos);
@@ -136,9 +149,16 @@ public class MemberService {
         }
     }
 
+    // MODIFICATION: Helper pour générer un ID de membre
+    private String generateMemberId() {
+        // Pour simplifier, on utilise un UUID
+        // Dans un vrai système, vous pourriez utiliser un format comme "MEMBER_1", "C1-M1", etc.
+        return "M" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
     private Member toMemberDto(MemberEntity entity, List<Member> referees) {
         Member dto = new Member();
-        dto.setId(String.valueOf(entity.getId()));
+        dto.setId(entity.getId());  // MODIFICATION: plus besoin de String.valueOf()
         dto.setFirstName(entity.getFirstName());
         dto.setLastName(entity.getLastName());
         dto.setBirthDate(entity.getBirthDate());
@@ -147,7 +167,6 @@ public class MemberService {
         dto.setProfession(entity.getProfession());
         dto.setPhoneNumber(entity.getPhoneNumber());
         dto.setEmail(entity.getEmail());
-        // occupation non disponible ici, on met null
         dto.setReferees(referees);
         return dto;
     }

@@ -1,10 +1,9 @@
 package mg.federation.agricole.api.entity;
 
-
 import java.time.LocalDate;
 
 public class MemberEntity {
-    private Long id;
+    private String id;  // Long → String
     private String firstName;
     private String lastName;
     private LocalDate birthDate;
@@ -17,11 +16,11 @@ public class MemberEntity {
 
     // getters/setters
 
-    public Long getId() {
+    public String getId() {  // Long → String
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {  // Long → String
         this.id = id;
     }
 
@@ -99,7 +98,7 @@ public class MemberEntity {
 
     // constructeurs
 
-    public MemberEntity(Long id, String firstName, String lastName, LocalDate birthDate, String gender, String address, String profession, String phoneNumber, String email, LocalDate dateAdhesionFederation) {
+    public MemberEntity(String id, String firstName, String lastName, LocalDate birthDate, String gender, String address, String profession, String phoneNumber, String email, LocalDate dateAdhesionFederation) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -112,7 +111,7 @@ public class MemberEntity {
         this.dateAdhesionFederation = dateAdhesionFederation;
     }
 
-    public MemberEntity(){
+    public MemberEntity() {
 
     }
 }

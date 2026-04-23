@@ -1,4 +1,3 @@
-// repository/ReferenceRepository.java
 package mg.federation.agricole.api.repository;
 
 import mg.federation.agricole.api.entity.ReferenceEntity;
@@ -10,11 +9,12 @@ import java.time.LocalDate;
 @Repository
 public class ReferenceRepository {
 
+    // MODIFICATION: insert avec String IDs
     public void insert(Connection conn, ReferenceEntity ref) throws SQLException {
         String sql = "INSERT INTO reference (candidate_id, sponsor_id, relation_nature, sponsorship_date) VALUES (?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, ref.getCandidateId());
-            stmt.setLong(2, ref.getSponsorId());
+            stmt.setString(1, ref.getCandidateId());
+            stmt.setString(2, ref.getSponsorId());
             stmt.setString(3, ref.getRelationNature());
             stmt.setDate(4, Date.valueOf(ref.getSponsorshipDate()));
             stmt.executeUpdate();

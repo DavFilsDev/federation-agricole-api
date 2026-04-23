@@ -3,7 +3,7 @@ package mg.federation.agricole.api.entity;
 import java.time.LocalDate;
 
 public class CollectivityEntity {
-    private Long id;
+    private String id;  // Long → String
     private String location;
     private String specialiteAgricole;
     private Integer annualDuesAmount;
@@ -12,7 +12,8 @@ public class CollectivityEntity {
     private String name;
     private Integer number;
 
-    public CollectivityEntity(Long id, String location, String specialiteAgricole, Integer annualDuesAmount, LocalDate dateCreation, Boolean federationApproval) {
+    // Constructeur modifié : id de type String
+    public CollectivityEntity(String id, String location, String specialiteAgricole, Integer annualDuesAmount, LocalDate dateCreation, Boolean federationApproval) {
         this.id = id;
         this.location = location;
         this.specialiteAgricole = specialiteAgricole;
@@ -20,13 +21,15 @@ public class CollectivityEntity {
         this.dateCreation = dateCreation;
         this.federationApproval = federationApproval;
     }
+
     public CollectivityEntity() {}
 
-    public Long getId() {
+    // Getter et Setter modifiés
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

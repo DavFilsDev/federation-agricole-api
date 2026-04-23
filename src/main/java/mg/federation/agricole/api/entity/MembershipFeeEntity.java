@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class MembershipFeeEntity {
-    private Long id;
-    private Long collectivityId;
+    private String id;           // Long → String (cot-1, cot-2, cot-3)
+    private String collectivityId; // Long → String (col-1, col-2, col-3)
     private LocalDate eligibleFrom;
     private String frequency;
     private BigDecimal amount;
@@ -16,11 +16,11 @@ public class MembershipFeeEntity {
     public MembershipFeeEntity() {}
 
     // Getters et Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public Long getCollectivityId() { return collectivityId; }
-    public void setCollectivityId(Long collectivityId) { this.collectivityId = collectivityId; }
+    public String getCollectivityId() { return collectivityId; }
+    public void setCollectivityId(String collectivityId) { this.collectivityId = collectivityId; }
 
     public LocalDate getEligibleFrom() { return eligibleFrom; }
     public void setEligibleFrom(LocalDate eligibleFrom) { this.eligibleFrom = eligibleFrom; }

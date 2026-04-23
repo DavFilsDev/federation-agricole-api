@@ -14,6 +14,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,7 +37,8 @@ public class MembershipFeeService {
 
     public List<MembershipFee> getMembershipFees(String collectivityIdStr) {
         try (Connection conn = dataSource.getConnection()) {
-            Long collectivityId = Long.parseLong(collectivityIdStr);
+            // MODIFICATION: Plus besoin de parsing, c'est déjà une String
+            String collectivityId = collectivityIdStr;
 
             if (collectivityRepository.findById(conn, collectivityId).isEmpty()) {
                 throw new ResourceNotFoundException("Collectivity not found with id: " + collectivityIdStr);
@@ -52,7 +54,7 @@ public class MembershipFeeService {
         }
     }
 
-    // Nouvelle méthode : créer des frais de cotisation
+    // Méthode : créer des frais de cotisation
     public List<MembershipFee> createMembershipFees(String collectivityIdStr, List<CreateMembershipFee> createFees) {
         if (createFees == null || createFees.isEmpty()) {
             throw new BusinessRuleException("At least one membership fee must be provided");
@@ -61,7 +63,8 @@ public class MembershipFeeService {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                Long collectivityId = Long.parseLong(collectivityIdStr);
+                // MODIFICATION: Plus besoin de parsing, c'est déjà une String
+                String collectivityId = collectivityIdStr;
 
                 // Vérifier que la collectivité existe
                 if (collectivityRepository.findById(conn, collectivityId).isEmpty()) {
@@ -86,8 +89,12 @@ public class MembershipFeeService {
                         throw new BusinessRuleException("Eligible from date is required");
                     }
 
+                    // MODIFICATION: Générer un ID pour la cotisation
+                    String feeId = generateMembershipFeeId();
+
                     // Création de l'entité
                     MembershipFeeEntity entity = new MembershipFeeEntity();
+                    entity.setId(feeId);  // MODIFICATION: setter l'ID
                     entity.setCollectivityId(collectivityId);
                     entity.setEligibleFrom(createFee.getEligibleFrom());
                     entity.setFrequency(createFee.getFrequency());
@@ -95,9 +102,8 @@ public class MembershipFeeService {
                     entity.setLabel(createFee.getLabel());
                     entity.setStatus("ACTIVE"); // Par défaut ACTIVE
 
-                    // Insertion en base
-                    Long generatedId = membershipFeeRepository.insert(conn, entity);
-                    entity.setId(generatedId);
+                    // Insertion en base (plus de retour d'ID)
+                    membershipFeeRepository.insert(conn, entity);
 
                     createdFees.add(toDto(entity));
                 }
@@ -114,9 +120,16 @@ public class MembershipFeeService {
         }
     }
 
+    // MODIFICATION: Helper pour générer un ID de cotisation
+    private String generateMembershipFeeId() {
+        // Pour simplifier, on utilise un UUID
+        // Dans un vrai système, vous pourriez utiliser un format comme "cot-1", "cot-2", etc.
+        return "cot-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
     private MembershipFee toDto(MembershipFeeEntity entity) {
         MembershipFee dto = new MembershipFee();
-        dto.setId(String.valueOf(entity.getId()));
+        dto.setId(entity.getId());  // MODIFICATION: plus besoin de String.valueOf()
         dto.setEligibleFrom(entity.getEligibleFrom());
         dto.setFrequency(entity.getFrequency());
         dto.setAmount(entity.getAmount());

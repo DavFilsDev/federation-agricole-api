@@ -30,7 +30,8 @@ public class FinancialAccountService {
 
     public List<FinancialAccount> getFinancialAccounts(String collectivityIdStr, LocalDate atDate) {
         try (Connection conn = dataSource.getConnection()) {
-            Long collectivityId = Long.parseLong(collectivityIdStr);
+            // MODIFICATION: Plus besoin de parsing, c'est déjà une String
+            String collectivityId = collectivityIdStr;
 
             // Vérifier que la collectivité existe
             if (collectivityRepository.findById(conn, collectivityId).isEmpty()) {

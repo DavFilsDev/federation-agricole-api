@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class PaymentService {
@@ -54,14 +55,15 @@ public class PaymentService {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                Long memberId = Long.parseLong(memberIdStr);
+                // MODIFICATION: Plus besoin de parsing, c'est déjà une String
+                String memberId = memberIdStr;
 
                 // Vérifier que le membre existe
                 MemberEntity member = memberRepository.findById(conn, memberId)
                         .orElseThrow(() -> new ResourceNotFoundException("Member not found with id: " + memberIdStr));
 
-                // Récupérer la collectivité du membre
-                Long collectivityId = membershipRepository.findCollectivityIdByMemberId(conn, memberId)
+                // Récupérer la collectivité du membre (retourne maintenant Optional<String>)
+                String collectivityId = membershipRepository.findCollectivityIdByMemberId(conn, memberId)
                         .orElseThrow(() -> new BusinessRuleException("Member is not affiliated to any collectivity"));
 
                 // Vérifier que la collectivité existe
@@ -81,10 +83,10 @@ public class PaymentService {
                         throw new BusinessRuleException("Invalid payment mode. Allowed: CASH, MOBILE_BANKING, BANK_TRANSFER");
                     }
 
-                    // Validation du membershipFee
-                    Long membershipFeeId = null;
+                    // Validation du membershipFee (ID en String)
+                    String membershipFeeId = null;
                     if (payment.getMembershipFeeIdentifier() != null && !payment.getMembershipFeeIdentifier().isEmpty()) {
-                        membershipFeeId = Long.parseLong(payment.getMembershipFeeIdentifier());
+                        membershipFeeId = payment.getMembershipFeeIdentifier();
                         Optional<MembershipFeeEntity> feeOpt = membershipFeeRepository.findById(conn, membershipFeeId);
                         if (feeOpt.isEmpty()) {
                             throw new ResourceNotFoundException("Membership fee not found with id: " + payment.getMembershipFeeIdentifier());
@@ -98,8 +100,8 @@ public class PaymentService {
                         }
                     }
 
-                    // Validation du compte crédité
-                    Long accountId = Long.parseLong(payment.getAccountCreditedIdentifier());
+                    // Validation du compte crédité (ID en String)
+                    String accountId = payment.getAccountCreditedIdentifier();
                     Optional<FinancialAccount> accountOpt = financialAccountRepository.findById(conn, accountId);
                     if (accountOpt.isEmpty()) {
                         throw new ResourceNotFoundException("Financial account not found with id: " + payment.getAccountCreditedIdentifier());
@@ -110,8 +112,12 @@ public class PaymentService {
                         throw new BusinessRuleException("Account does not belong to member's collectivity");
                     }
 
+                    // MODIFICATION: Générer un ID pour la transaction
+                    String transactionId = generateTransactionId();
+
                     // Créer la transaction
                     TransactionEntity transaction = new TransactionEntity();
+                    transaction.setId(transactionId);  // MODIFICATION: setter l'ID
                     transaction.setMemberId(memberId);
                     transaction.setCollectivityId(collectivityId);
                     transaction.setAmount(BigDecimal.valueOf(payment.getAmount()));
@@ -120,7 +126,7 @@ public class PaymentService {
                     transaction.setMembershipFeeId(membershipFeeId);
                     transaction.setCreationDate(LocalDate.now());
 
-                    Long transactionId = transactionRepository.insert(conn, transaction);
+                    transactionRepository.insert(conn, transaction);  // MODIFICATION: plus de retour
 
                     // Mettre à jour le solde du compte
                     FinancialAccount account = accountOpt.get();
@@ -133,7 +139,7 @@ public class PaymentService {
 
                     // Construire la réponse
                     MemberPayment response = new MemberPayment();
-                    response.setId(String.valueOf(transactionId));
+                    response.setId(transactionId);  // MODIFICATION: plus besoin de String.valueOf()
                     response.setAmount(payment.getAmount());
                     response.setPaymentMode(payment.getPaymentMode());
                     updatedAccountOpt.ifPresent(response::setAccountCredited);
@@ -152,5 +158,12 @@ public class PaymentService {
         } catch (SQLException e) {
             throw new RuntimeException("Database connection error", e);
         }
+    }
+
+    // MODIFICATION: Helper pour générer un ID de transaction
+    private String generateTransactionId() {
+        // Pour simplifier, on utilise un UUID
+        // Dans un vrai système avec les données de test, utilisez "tx-C1-M1", "tx-C2-M1", etc.
+        return "tx-" + UUID.randomUUID().toString().substring(0, 8);
     }
 }

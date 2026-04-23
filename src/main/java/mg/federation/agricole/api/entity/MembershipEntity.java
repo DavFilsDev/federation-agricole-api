@@ -4,8 +4,8 @@ package mg.federation.agricole.api.entity;
 import java.time.LocalDate;
 
 public class MembershipEntity {
-    private Long memberId;
-    private Long collectivityId;
+    private String memberId;      // Long → String
+    private String collectivityId; // Long → String
     private String occupation;
     private Boolean registrationFeePaid;
     private Boolean membershipDuesPaid;
@@ -15,7 +15,7 @@ public class MembershipEntity {
     public MembershipEntity() {
     }
 
-    public MembershipEntity(Long memberId, Long collectivityId, String occupation, Boolean registrationFeePaid, Boolean membershipDuesPaid, LocalDate dateAdhesion, LocalDate paymentDate) {
+    public MembershipEntity(String memberId, String collectivityId, String occupation, Boolean registrationFeePaid, Boolean membershipDuesPaid, LocalDate dateAdhesion, LocalDate paymentDate) {
         this.memberId = memberId;
         this.collectivityId = collectivityId;
         this.occupation = occupation;
@@ -25,19 +25,19 @@ public class MembershipEntity {
         this.paymentDate = paymentDate;
     }
 
-    public Long getMemberId() {
+    public String getMemberId() {
         return memberId;
     }
 
-    public void setMemberId(Long memberId) {
+    public void setMemberId(String memberId) {
         this.memberId = memberId;
     }
 
-    public Long getCollectivityId() {
+    public String getCollectivityId() {
         return collectivityId;
     }
 
-    public void setCollectivityId(Long collectivityId) {
+    public void setCollectivityId(String collectivityId) {
         this.collectivityId = collectivityId;
     }
 
