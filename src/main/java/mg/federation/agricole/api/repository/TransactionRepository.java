@@ -42,7 +42,7 @@ public class TransactionRepository {
 
     public void insert(Connection conn, TransactionEntity transaction) throws SQLException {
         String sql = "INSERT INTO transaction (id, member_id, collectivity_id, amount, payment_mode, account_credited_id, membership_fee_id, creation_date) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?, CAST(? as payment_mode_enum), ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, transaction.getId());
             stmt.setString(2, transaction.getMemberId());

@@ -11,7 +11,7 @@ import java.util.*;
 public class MembershipRepository {
 
     public void insert(Connection conn, MembershipEntity membership) throws SQLException {
-        String sql = "INSERT INTO membership (member_id, collectivity_id, occupation, registration_fee_paid, membership_dues_paid, date_adhesion, payment_date) VALUES (?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO membership (member_id, collectivity_id, occupation, registration_fee_paid, membership_dues_paid, date_adhesion, payment_date) VALUES (?,?,CAST(? as member_occupation_enum),?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, membership.getMemberId());
             stmt.setString(2, membership.getCollectivityId());

@@ -41,7 +41,7 @@ public class MemberRepository {
     }
 
     public void insert(Connection conn, MemberEntity member) throws SQLException {
-        String sql = "INSERT INTO member (id, first_name, last_name, birth_date, gender, address, profession, phone_number, email, date_adhesion_federation) VALUES (?,?,?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO member (id, first_name, last_name, birth_date, gender, address, profession, phone_number, email, date_adhesion_federation) VALUES (?,?,?,?,CAST(? as gender_enum),?,?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, member.getId());
             stmt.setString(2, member.getFirstName());
