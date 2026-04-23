@@ -39,4 +39,27 @@ public class TransactionRepository {
         }
         return transactions;
     }
+
+    public Long insert(Connection conn, TransactionEntity transaction) throws SQLException {
+        String sql = "INSERT INTO transaction (member_id, collectivity_id, amount, payment_mode, account_credited_id, membership_fee_id, creation_date) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, transaction.getMemberId());
+            stmt.setLong(2, transaction.getCollectivityId());
+            stmt.setBigDecimal(3, transaction.getAmount());
+            stmt.setString(4, transaction.getPaymentMode());
+            stmt.setLong(5, transaction.getAccountCreditedId());
+            if (transaction.getMembershipFeeId() != null) {
+                stmt.setLong(6, transaction.getMembershipFeeId());
+            } else {
+                stmt.setNull(6, Types.BIGINT);
+            }
+            stmt.setDate(7, Date.valueOf(transaction.getCreationDate()));
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+            throw new SQLException("Insert failed, no ID returned");
+        }
+    }
 }
