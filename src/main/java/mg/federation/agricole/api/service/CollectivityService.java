@@ -51,13 +51,12 @@ public class CollectivityService {
                 }
 
                 // 2. Vérifier nombre de membres >= 10
-                List<String> memberIdsStr = create.getMembers();
-                if (memberIdsStr == null || memberIdsStr.size() < 10) {
+                List<String> memberIds = create.getMembers();  // Déjà List<String>
+                if (memberIds == null || memberIds.size() < 10) {
                     throw new BusinessRuleException("At least 10 members required");
                 }
 
-                // Convertir les IDs en Long
-                List<Long> memberIds = memberIdsStr.stream().map(Long::parseLong).collect(Collectors.toList());
+                // Récupérer les membres (plus besoin de conversion Long)
                 List<MemberEntity> members = memberRepository.findByIds(conn, memberIds);
                 if (members.size() != memberIds.size()) {
                     throw new ResourceNotFoundException("Some members not found");
@@ -71,7 +70,6 @@ public class CollectivityService {
                     }
                 }
 
-                // 4. Vérifier les postes spécifiques
                 CreateCollectivityStructure structure = create.getStructure();
                 if (structure == null) {
                     throw new BusinessRuleException("Structure (president, vicePresident, treasurer, secretary) is required");
@@ -84,45 +82,42 @@ public class CollectivityService {
                 if (roleIds.size() != 4) {
                     throw new BusinessRuleException("President, vice-president, treasurer and secretary must be distinct");
                 }
-                // Vérifier que ces 4 membres sont bien dans la liste des membres
-                Set<String> memberIdSet = new HashSet<>(memberIdsStr);
+                Set<String> memberIdSet = new HashSet<>(memberIds);
                 for (String roleId : roleIds) {
                     if (!memberIdSet.contains(roleId)) {
                         throw new BusinessRuleException("Role member " + roleId + " not in members list");
                     }
                 }
 
-                // 5. Insérer la collectivité (sans spécialité ni annual_dues car non fournis, on met des valeurs par défaut)
+                String collectivityId = generateCollectivityId();
+
                 CollectivityEntity collectivityEntity = new CollectivityEntity();
+                collectivityEntity.setId(collectivityId);
                 collectivityEntity.setLocation(create.getLocation());
-                collectivityEntity.setSpecialiteAgricole("inconnue");  // par défaut
-                collectivityEntity.setAnnualDuesAmount(0);            // par défaut
+                collectivityEntity.setSpecialiteAgricole("inconnue");
+                collectivityEntity.setAnnualDuesAmount(0);
                 collectivityEntity.setDateCreation(LocalDate.now());
                 collectivityEntity.setFederationApproval(true);
-                // uniqueNumber et uniqueName sont null à la création
                 collectivityEntity.setNumber(null);
                 collectivityEntity.setName(null);
-                Long collectivityId = collectivityRepository.insert(conn, collectivityEntity);
+                collectivityRepository.insert(conn, collectivityEntity);
 
-                // 6. Insérer les membreships
                 LocalDate now = LocalDate.now();
-                for (String memberIdStr : memberIdsStr) {
-                    Long mid = Long.parseLong(memberIdStr);
+                for (String memberId : memberIds) {
                     MembershipEntity ms = new MembershipEntity();
-                    ms.setMemberId(mid);
+                    ms.setMemberId(memberId);
                     ms.setCollectivityId(collectivityId);
-                    // Déterminer l'occupation
                     String occupation;
-                    if (memberIdStr.equals(structure.getPresident())) {
+                    if (memberId.equals(structure.getPresident())) {
                         occupation = "PRESIDENT";
-                    } else if (memberIdStr.equals(structure.getVicePresident())) {
+                    } else if (memberId.equals(structure.getVicePresident())) {
                         occupation = "VICE_PRESIDENT";
-                    } else if (memberIdStr.equals(structure.getTreasurer())) {
+                    } else if (memberId.equals(structure.getTreasurer())) {
                         occupation = "TREASURER";
-                    } else if (memberIdStr.equals(structure.getSecretary())) {
+                    } else if (memberId.equals(structure.getSecretary())) {
                         occupation = "SECRETARY";
                     } else {
-                        occupation = "JUNIOR";   // par défaut
+                        occupation = "JUNIOR";
                     }
                     ms.setOccupation(occupation);
                     ms.setRegistrationFeePaid(true);
@@ -132,14 +127,11 @@ public class CollectivityService {
                     membershipRepository.insert(conn, ms);
                 }
 
-                // 7. Recharger l'entité collectivité pour avoir l'id et les champs à jour
                 CollectivityEntity savedEntity = collectivityRepository.findById(conn, collectivityId)
                         .orElseThrow(() -> new RuntimeException("Collectivity not found after insertion"));
 
                 conn.commit();
 
-                // 8. Utiliser la méthode utilitaire toCollectivityDto pour construire la réponse
-                //    (cette méthode récupère les membres et la structure automatiquement)
                 return toCollectivityDto(savedEntity, conn);
 
             } catch (SQLException | RuntimeException e) {
@@ -151,9 +143,16 @@ public class CollectivityService {
         }
     }
 
+    // Helper pour générer un ID de collectivité (à adapter selon votre logique)
+    private String generateCollectivityId() {
+        // Pour simplifier, on peut utiliser un UUID ou un compteur
+        // Dans un vrai système, vous pourriez avoir une séquence en base
+        return "col-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
     private Member toMemberDto(MemberEntity entity) {
         Member dto = new Member();
-        dto.setId(String.valueOf(entity.getId()));
+        dto.setId(entity.getId());  // String, plus besoin de String.valueOf()
         dto.setFirstName(entity.getFirstName());
         dto.setLastName(entity.getLastName());
         dto.setBirthDate(entity.getBirthDate());
@@ -162,7 +161,6 @@ public class CollectivityService {
         dto.setProfession(entity.getProfession());
         dto.setPhoneNumber(entity.getPhoneNumber());
         dto.setEmail(entity.getEmail());
-        // occupation non disponible ici, on met null
         return dto;
     }
 
@@ -171,16 +169,15 @@ public class CollectivityService {
         List<MembershipEntity> memberships = membershipRepository.findByCollectivityId(conn, entity.getId());
 
         // Construire la map des membres (id -> Member DTO)
-        Map<Long, Member> memberMap = new HashMap<>();
+        Map<String, Member> memberMap = new HashMap<>();
         for (MembershipEntity ms : memberships) {
             Optional<MemberEntity> optMember = memberRepository.findById(conn, ms.getMemberId());
             optMember.ifPresent(memberEntity -> {
-                Member memberDto = toMemberDto(memberEntity, null); // sans referees pour éviter récursion
+                Member memberDto = toMemberDto(memberEntity);
                 memberMap.put(memberEntity.getId(), memberDto);
             });
         }
 
-        // Extraire la structure (président, vice-président, trésorier, secrétaire)
         CollectivityStructure struct = new CollectivityStructure();
         for (MembershipEntity ms : memberships) {
             Member m = memberMap.get(ms.getMemberId());
@@ -201,9 +198,8 @@ public class CollectivityService {
             }
         }
 
-        // Construction du DTO Collectivity
         Collectivity dto = new Collectivity();
-        dto.setId(String.valueOf(entity.getId()));
+        dto.setId(entity.getId());
         dto.setLocation(entity.getLocation());
         dto.setNumber(entity.getNumber());
         dto.setName(entity.getName());
@@ -215,7 +211,7 @@ public class CollectivityService {
 
     private Member toMemberDto(MemberEntity entity, List<Member> referees) {
         Member dto = new Member();
-        dto.setId(String.valueOf(entity.getId()));
+        dto.setId(entity.getId());
         dto.setFirstName(entity.getFirstName());
         dto.setLastName(entity.getLastName());
         dto.setBirthDate(entity.getBirthDate());
@@ -224,7 +220,6 @@ public class CollectivityService {
         dto.setProfession(entity.getProfession());
         dto.setPhoneNumber(entity.getPhoneNumber());
         dto.setEmail(entity.getEmail());
-        // occupation n'est pas stocké dans MemberEntity, on peut le laisser null ou le récupérer ailleurs
         dto.setReferees(referees);
         return dto;
     }
@@ -233,35 +228,29 @@ public class CollectivityService {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                Long id = Long.parseLong(idStr);
+                String id = idStr;
 
-                // Vérifier existence
                 CollectivityEntity entity = collectivityRepository.findById(conn, id)
                         .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found"));
 
-                // Vérifier si déjà nom et numéro (ne peut pas être modifié)
                 if (collectivityRepository.hasNameAndNumber(conn, id)) {
                     throw new BusinessRuleException("Name and number already set (immutable)");
                 }
 
-                // Vérifier unicité du nom
                 if (collectivityRepository.isNameUsed(conn, info.getName(), id)) {
                     throw new BusinessRuleException("Name already used by another collectivity");
                 }
 
-                // Vérifier unicité du numéro
                 if (collectivityRepository.isNumberUsed(conn, info.getNumber(), id)) {
                     throw new BusinessRuleException("Number already used by another collectivity");
                 }
 
-                // Mettre à jour
                 collectivityRepository.updateNameAndNumber(conn, id, info.getName(), info.getNumber());
 
-                // Recharger l'entité
-                CollectivityEntity updated = collectivityRepository.findById(conn, id).get();
+                CollectivityEntity updated = collectivityRepository.findById(conn, id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found after update"));
                 conn.commit();
 
-                // Convertir en DTO
                 return toCollectivityDto(updated, conn);
 
             } catch (SQLException e) {
@@ -270,6 +259,20 @@ public class CollectivityService {
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public Collectivity getCollectivityById(String idStr) {
+        try (Connection conn = dataSource.getConnection()) {
+            String id = idStr;
+
+            CollectivityEntity entity = collectivityRepository.findByIdWithDetails(conn, id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found with id: " + idStr));
+
+            return toCollectivityDto(entity, conn);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error while fetching collectivity", e);
         }
     }
 }

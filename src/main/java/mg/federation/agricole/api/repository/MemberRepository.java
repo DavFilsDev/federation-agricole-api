@@ -1,7 +1,6 @@
 package mg.federation.agricole.api.repository;
 
 import mg.federation.agricole.api.entity.MemberEntity;
-import mg.federation.agricole.api.dto.MemberOccupation;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;
@@ -12,10 +11,10 @@ import java.util.*;
 @Repository
 public class MemberRepository {
 
-    public Optional<MemberEntity> findById(Connection conn, Long id) throws SQLException {
+    public Optional<MemberEntity> findById(Connection conn, String id) throws SQLException {
         String sql = "SELECT id, first_name, last_name, birth_date, gender, address, profession, phone_number, email, date_adhesion_federation FROM member WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, id);
+            stmt.setString(1, id);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 return Optional.of(map(rs));
@@ -24,13 +23,13 @@ public class MemberRepository {
         }
     }
 
-    public List<MemberEntity> findByIds(Connection conn, List<Long> ids) throws SQLException {
+    public List<MemberEntity> findByIds(Connection conn, List<String> ids) throws SQLException {
         if (ids.isEmpty()) return List.of();
         String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
         String sql = "SELECT id, first_name, last_name, birth_date, gender, address, profession, phone_number, email, date_adhesion_federation FROM member WHERE id IN (" + placeholders + ")";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             for (int i = 0; i < ids.size(); i++) {
-                stmt.setLong(i + 1, ids.get(i));
+                stmt.setString(i + 1, ids.get(i));
             }
             ResultSet rs = stmt.executeQuery();
             List<MemberEntity> list = new ArrayList<>();
@@ -41,29 +40,37 @@ public class MemberRepository {
         }
     }
 
-    public Long insert(Connection conn, MemberEntity member) throws SQLException {
-        String sql = "INSERT INTO member (first_name, last_name, birth_date, gender, address, profession, phone_number, email, date_adhesion_federation) VALUES (?,?,?,?,?,?,?,?,?) RETURNING id";
+    public void insert(Connection conn, MemberEntity member) throws SQLException {
+        String sql = "INSERT INTO member (id, first_name, last_name, birth_date, gender, address, profession, phone_number, email, date_adhesion_federation) VALUES (?,?,?,?,CAST(? as gender_enum),?,?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, member.getFirstName());
-            stmt.setString(2, member.getLastName());
-            stmt.setDate(3, Date.valueOf(member.getBirthDate()));
-            stmt.setString(4, member.getGender());
-            stmt.setString(5, member.getAddress());
-            stmt.setString(6, member.getProfession());
-            stmt.setString(7, member.getPhoneNumber());
-            stmt.setString(8, member.getEmail());
-            stmt.setDate(9, Date.valueOf(member.getDateAdhesionFederation()));
-            ResultSet rs = stmt.executeQuery();
+            stmt.setString(1, member.getId());
+            stmt.setString(2, member.getFirstName());
+            stmt.setString(3, member.getLastName());
+            stmt.setDate(4, Date.valueOf(member.getBirthDate()));
+            stmt.setString(5, member.getGender());
+            stmt.setString(6, member.getAddress());
+            stmt.setString(7, member.getProfession());
+            stmt.setString(8, member.getPhoneNumber());
+            stmt.setString(9, member.getEmail());
+            stmt.setDate(10, Date.valueOf(member.getDateAdhesionFederation()));
+            stmt.executeUpdate();
+        }
+    }
+
+    public int countAll(Connection conn) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM member";
+        try (Statement stmt = conn.createStatement()) {
+            ResultSet rs = stmt.executeQuery(sql);
             if (rs.next()) {
-                return rs.getLong(1);
+                return rs.getInt(1);
             }
-            throw new SQLException("Insert failed, no ID returned");
+            return 0;
         }
     }
 
     private MemberEntity map(ResultSet rs) throws SQLException {
         MemberEntity m = new MemberEntity();
-        m.setId(rs.getLong("id"));
+        m.setId(rs.getString("id"));
         m.setFirstName(rs.getString("first_name"));
         m.setLastName(rs.getString("last_name"));
         m.setBirthDate(rs.getDate("birth_date").toLocalDate());

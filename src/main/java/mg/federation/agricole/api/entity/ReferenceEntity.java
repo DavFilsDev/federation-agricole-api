@@ -4,32 +4,33 @@ package mg.federation.agricole.api.entity;
 import java.time.LocalDate;
 
 public class ReferenceEntity {
-    private Long candidateId;
-    private Long sponsorId;
+    private String candidateId;
+    private String sponsorId;
     private String relationNature;
     private LocalDate sponsorshipDate;
 
-    public ReferenceEntity(Long candidateId, Long sponsorId, String relationNature, LocalDate sponsorshipDate) {
+    public ReferenceEntity(String candidateId, String sponsorId, String relationNature, LocalDate sponsorshipDate) {
         this.candidateId = candidateId;
         this.sponsorId = sponsorId;
         this.relationNature = relationNature;
         this.sponsorshipDate = sponsorshipDate;
     }
+
     public ReferenceEntity() {}
 
-    public Long getCandidateId() {
+    public String getCandidateId() {
         return candidateId;
     }
 
-    public void setCandidateId(Long candidateId) {
+    public void setCandidateId(String candidateId) {
         this.candidateId = candidateId;
     }
 
-    public Long getSponsorId() {
+    public String getSponsorId() {
         return sponsorId;
     }
 
-    public void setSponsorId(Long sponsorId) {
+    public void setSponsorId(String sponsorId) {
         this.sponsorId = sponsorId;
     }
 

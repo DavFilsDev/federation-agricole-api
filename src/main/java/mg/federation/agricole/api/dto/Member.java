@@ -3,7 +3,7 @@ package mg.federation.agricole.api.dto;
 import java.util.List;
 
 public class Member extends MemberInformation {
-    private String id;      // identifiant sous forme de chaîne (conversion Long→String)
+    private String id;
     private List<Member> referees;
 
     public String getId() {
