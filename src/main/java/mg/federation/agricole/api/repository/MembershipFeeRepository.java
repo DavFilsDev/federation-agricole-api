@@ -38,7 +38,7 @@ public class MembershipFeeRepository {
     // MODIFICATION 2: insert avec id explicite (plus de RETURNING id)
     public void insert(Connection conn, MembershipFeeEntity fee) throws SQLException {
         String sql = "INSERT INTO membership_fee (id, collectivity_id, eligible_from, frequency, amount, label, status) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, CAST(? as frequency_enum), ?, ?, CAST(? as activity_status_enum))";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, fee.getId());
             stmt.setString(2, fee.getCollectivityId());
