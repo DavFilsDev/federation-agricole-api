@@ -272,4 +272,20 @@ public class CollectivityService {
             throw new RuntimeException(e);
         }
     }
+
+    public Collectivity getCollectivityById(String idStr) {
+        try (Connection conn = dataSource.getConnection()) {
+            Long id = Long.parseLong(idStr);
+
+            // Récupérer la collectivité
+            CollectivityEntity entity = collectivityRepository.findByIdWithDetails(conn, id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found with id: " + idStr));
+
+            // Convertir en DTO
+            return toCollectivityDto(entity, conn);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error while fetching collectivity", e);
+        }
+    }
 }
