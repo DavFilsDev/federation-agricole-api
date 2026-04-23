@@ -63,6 +63,8 @@ CREATE TABLE transaction (
                              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE financial_account ADD COLUMN collectivity_id INTEGER REFERENCES collectivity(id);
+
 -- Index
 CREATE INDEX idx_membership_fee_collectivity ON membership_fee(collectivity_id);
 CREATE INDEX idx_transaction_collectivity ON transaction(collectivity_id);
