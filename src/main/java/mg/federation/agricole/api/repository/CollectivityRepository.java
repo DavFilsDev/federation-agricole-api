@@ -10,7 +10,6 @@ import java.util.Optional;
 @Repository
 public class CollectivityRepository {
 
-    // MODIFICATION 1: insert prend un id explicite et ne retourne rien (ou retourne l'id)
     public void insert(Connection conn, CollectivityEntity collectivity) throws SQLException {
         String sql = "INSERT INTO collectivity (id, location, specialite_agricole, annual_dues_amount, date_creation, federation_approval, name, number) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -22,7 +21,6 @@ public class CollectivityRepository {
             stmt.setDate(5, Date.valueOf(collectivity.getDateCreation()));
             stmt.setBoolean(6, collectivity.getFederationApproval());
             stmt.setString(7, collectivity.getName());
-            // number peut être null (si pas encore attribué)
             if (collectivity.getNumber() != null) {
                 stmt.setInt(8, collectivity.getNumber());
             } else {
@@ -32,7 +30,6 @@ public class CollectivityRepository {
         }
     }
 
-    // MODIFICATION 2: findById retourne Optional<CollectivityEntity> avec String id
     public Optional<CollectivityEntity> findById(Connection conn, String id) throws SQLException {
         String sql = "SELECT id, location, specialite_agricole, annual_dues_amount, date_creation, federation_approval, name, number " +
                 "FROM collectivity WHERE id = ?";
@@ -48,7 +45,6 @@ public class CollectivityRepository {
                 c.setDateCreation(rs.getDate("date_creation").toLocalDate());
                 c.setFederationApproval(rs.getBoolean("federation_approval"));
                 c.setName(rs.getString("name"));
-                // number peut être null
                 int number = rs.getInt("number");
                 c.setNumber(rs.wasNull() ? null : number);
                 return Optional.of(c);
@@ -57,7 +53,6 @@ public class CollectivityRepository {
         }
     }
 
-    // MODIFICATION 3: hasNameAndNumber avec String id
     public boolean hasNameAndNumber(Connection conn, String id) throws SQLException {
         String sql = "SELECT name, number FROM collectivity WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -70,7 +65,6 @@ public class CollectivityRepository {
         }
     }
 
-    // MODIFICATION 4: updateNameAndNumber avec String id
     public void updateNameAndNumber(Connection conn, String id, String name, Integer number) throws SQLException {
         String sql = "UPDATE collectivity SET name = ?, number = ? WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -97,7 +91,6 @@ public class CollectivityRepository {
         }
     }
 
-    // MODIFICATION 6: isNumberUsed avec String excludeId
     public boolean isNumberUsed(Connection conn, Integer number, String excludeId) throws SQLException {
         String sql = "SELECT 1 FROM collectivity WHERE number = ? AND id != ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -108,7 +101,6 @@ public class CollectivityRepository {
         }
     }
 
-    // MODIFICATION 7: findByIdWithDetails avec String id
     public Optional<CollectivityEntity> findByIdWithDetails(Connection conn, String id) throws SQLException {
         String sql = "SELECT id, location, name, number, specialite_agricole, annual_dues_amount, date_creation, federation_approval " +
                 "FROM collectivity WHERE id = ?";

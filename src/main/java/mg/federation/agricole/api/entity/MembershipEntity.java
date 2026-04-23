@@ -4,8 +4,8 @@ package mg.federation.agricole.api.entity;
 import java.time.LocalDate;
 
 public class MembershipEntity {
-    private String memberId;      // Long → String
-    private String collectivityId; // Long → String
+    private String memberId;
+    private String collectivityId;
     private String occupation;
     private Boolean registrationFeePaid;
     private Boolean membershipDuesPaid;

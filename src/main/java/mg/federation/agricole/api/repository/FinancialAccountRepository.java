@@ -13,7 +13,6 @@ import java.util.Optional;
 @Repository
 public class FinancialAccountRepository {
 
-    // MODIFICATION 1: findById avec String id
     public Optional<FinancialAccount> findById(Connection conn, String id) throws SQLException {
         String sql = "SELECT type, amount FROM financial_account WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -65,7 +64,6 @@ public class FinancialAccountRepository {
         }
     }
 
-    // MODIFICATION 3: getBankAccount avec String id
     private BankAccount getBankAccount(Connection conn, String id, BigDecimal amount) throws SQLException {
         String sql = "SELECT holder_name, bank_name, bank_code, branch_code, account_number, account_key FROM bank_account WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -87,8 +85,6 @@ public class FinancialAccountRepository {
         }
     }
 
-    // MODIFICATION 4: isAccountBelongsToCollectivity avec String accountId et String collectivityId
-    // Note: La table financial_account a maintenant une colonne collectivity_id (ajoutée dans le script SQL)
     public boolean isAccountBelongsToCollectivity(Connection conn, String accountId, String collectivityId) throws SQLException {
         String sql = "SELECT 1 FROM financial_account WHERE id = ? AND collectivity_id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -99,7 +95,6 @@ public class FinancialAccountRepository {
         }
     }
 
-    // MODIFICATION 5: updateAmount avec String accountId
     public void updateAmount(Connection conn, String accountId, BigDecimal newAmount) throws SQLException {
         String sql = "UPDATE financial_account SET amount = ? WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -109,7 +104,6 @@ public class FinancialAccountRepository {
         }
     }
 
-    // MODIFICATION 6: findByCollectivityId avec String collectivityId
     public List<FinancialAccount> findByCollectivityId(Connection conn, String collectivityId) throws SQLException {
         String sql = "SELECT id, type, amount FROM financial_account WHERE collectivity_id = ?";
         List<FinancialAccount> accounts = new ArrayList<>();
@@ -160,7 +154,6 @@ public class FinancialAccountRepository {
         return accounts;
     }
 
-    // MODIFICATION 8: getAccountWithDetails avec String id
     private FinancialAccount getAccountWithDetails(Connection conn, String id, String type, BigDecimal amount) throws SQLException {
         switch (type) {
             case "CASH":

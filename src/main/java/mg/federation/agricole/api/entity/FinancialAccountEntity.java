@@ -3,8 +3,8 @@ package mg.federation.agricole.api.entity;
 import java.math.BigDecimal;
 
 public class FinancialAccountEntity {
-    private String id;  // Long → String
-    private String type; // CASH, MOBILE_BANKING, BANK
+    private String id;
+    private String type;
     private BigDecimal amount;
 
     public FinancialAccountEntity() {}

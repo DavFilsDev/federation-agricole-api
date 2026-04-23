@@ -13,7 +13,6 @@ import java.util.Optional;
 @Repository
 public class MembershipFeeRepository {
 
-    // MODIFICATION 1: findByCollectivityId avec String collectivityId
     public List<MembershipFeeEntity> findByCollectivityId(Connection conn, String collectivityId) throws SQLException {
         String sql = "SELECT id, collectivity_id, eligible_from, frequency, amount, label, status " +
                 "FROM membership_fee WHERE collectivity_id = ? ORDER BY eligible_from DESC";
@@ -52,7 +51,6 @@ public class MembershipFeeRepository {
         }
     }
 
-    // MODIFICATION 3: existsDuplicate avec String collectivityId
     public boolean existsDuplicate(Connection conn, String collectivityId, LocalDate eligibleFrom, String frequency, BigDecimal amount) throws SQLException {
         String sql = "SELECT 1 FROM membership_fee WHERE collectivity_id = ? AND eligible_from = ? AND frequency = ? AND amount = ? LIMIT 1";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -65,7 +63,6 @@ public class MembershipFeeRepository {
         }
     }
 
-    // MODIFICATION 4: findById avec String id
     public Optional<MembershipFeeEntity> findById(Connection conn, String id) throws SQLException {
         String sql = "SELECT id, collectivity_id, eligible_from, frequency, amount, label, status " +
                 "FROM membership_fee WHERE id = ?";

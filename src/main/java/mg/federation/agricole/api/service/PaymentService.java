@@ -28,7 +28,6 @@ public class PaymentService {
     private final FinancialAccountRepository financialAccountRepository;
     private final TransactionRepository transactionRepository;
 
-    // Liste des modes de paiement valides
     private static final List<String> VALID_PAYMENT_MODES = List.of("CASH", "MOBILE_BANKING", "BANK_TRANSFER");
 
     public PaymentService(DataSource dataSource,
@@ -55,35 +54,28 @@ public class PaymentService {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // MODIFICATION: Plus besoin de parsing, c'est déjà une String
                 String memberId = memberIdStr;
 
-                // Vérifier que le membre existe
                 MemberEntity member = memberRepository.findById(conn, memberId)
                         .orElseThrow(() -> new ResourceNotFoundException("Member not found with id: " + memberIdStr));
 
-                // Récupérer la collectivité du membre (retourne maintenant Optional<String>)
                 String collectivityId = membershipRepository.findCollectivityIdByMemberId(conn, memberId)
                         .orElseThrow(() -> new BusinessRuleException("Member is not affiliated to any collectivity"));
 
-                // Vérifier que la collectivité existe
                 collectivityRepository.findById(conn, collectivityId)
                         .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found"));
 
                 List<MemberPayment> createdPayments = new ArrayList<>();
 
                 for (CreateMemberPayment payment : payments) {
-                    // Validation du montant
                     if (payment.getAmount() == null || payment.getAmount() <= 0) {
                         throw new BusinessRuleException("Amount must be positive");
                     }
 
-                    // Validation du mode de paiement
                     if (payment.getPaymentMode() == null || !VALID_PAYMENT_MODES.contains(payment.getPaymentMode())) {
                         throw new BusinessRuleException("Invalid payment mode. Allowed: CASH, MOBILE_BANKING, BANK_TRANSFER");
                     }
 
-                    // Validation du membershipFee (ID en String)
                     String membershipFeeId = null;
                     if (payment.getMembershipFeeIdentifier() != null && !payment.getMembershipFeeIdentifier().isEmpty()) {
                         membershipFeeId = payment.getMembershipFeeIdentifier();
@@ -100,24 +92,20 @@ public class PaymentService {
                         }
                     }
 
-                    // Validation du compte crédité (ID en String)
                     String accountId = payment.getAccountCreditedIdentifier();
                     Optional<FinancialAccount> accountOpt = financialAccountRepository.findById(conn, accountId);
                     if (accountOpt.isEmpty()) {
                         throw new ResourceNotFoundException("Financial account not found with id: " + payment.getAccountCreditedIdentifier());
                     }
 
-                    // Vérifier que le compte appartient à la collectivité
                     if (!financialAccountRepository.isAccountBelongsToCollectivity(conn, accountId, collectivityId)) {
                         throw new BusinessRuleException("Account does not belong to member's collectivity");
                     }
 
-                    // MODIFICATION: Générer un ID pour la transaction
                     String transactionId = generateTransactionId();
 
-                    // Créer la transaction
                     TransactionEntity transaction = new TransactionEntity();
-                    transaction.setId(transactionId);  // MODIFICATION: setter l'ID
+                    transaction.setId(transactionId);
                     transaction.setMemberId(memberId);
                     transaction.setCollectivityId(collectivityId);
                     transaction.setAmount(BigDecimal.valueOf(payment.getAmount()));
@@ -126,20 +114,17 @@ public class PaymentService {
                     transaction.setMembershipFeeId(membershipFeeId);
                     transaction.setCreationDate(LocalDate.now());
 
-                    transactionRepository.insert(conn, transaction);  // MODIFICATION: plus de retour
+                    transactionRepository.insert(conn, transaction);
 
-                    // Mettre à jour le solde du compte
                     FinancialAccount account = accountOpt.get();
                     BigDecimal currentAmount = account.getAmount();
                     BigDecimal newAmount = currentAmount.add(BigDecimal.valueOf(payment.getAmount()));
                     financialAccountRepository.updateAmount(conn, accountId, newAmount);
 
-                    // Recharger le compte avec le nouveau solde
                     Optional<FinancialAccount> updatedAccountOpt = financialAccountRepository.findById(conn, accountId);
 
-                    // Construire la réponse
                     MemberPayment response = new MemberPayment();
-                    response.setId(transactionId);  // MODIFICATION: plus besoin de String.valueOf()
+                    response.setId(transactionId);
                     response.setAmount(payment.getAmount());
                     response.setPaymentMode(payment.getPaymentMode());
                     updatedAccountOpt.ifPresent(response::setAccountCredited);
@@ -160,10 +145,7 @@ public class PaymentService {
         }
     }
 
-    // MODIFICATION: Helper pour générer un ID de transaction
     private String generateTransactionId() {
-        // Pour simplifier, on utilise un UUID
-        // Dans un vrai système avec les données de test, utilisez "tx-C1-M1", "tx-C2-M1", etc.
         return "tx-" + UUID.randomUUID().toString().substring(0, 8);
     }
 }

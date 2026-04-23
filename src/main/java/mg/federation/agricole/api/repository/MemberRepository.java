@@ -11,7 +11,6 @@ import java.util.*;
 @Repository
 public class MemberRepository {
 
-    // MODIFICATION 1: findById avec String id
     public Optional<MemberEntity> findById(Connection conn, String id) throws SQLException {
         String sql = "SELECT id, first_name, last_name, birth_date, gender, address, profession, phone_number, email, date_adhesion_federation FROM member WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -24,7 +23,6 @@ public class MemberRepository {
         }
     }
 
-    // MODIFICATION 2: findByIds avec List<String> ids
     public List<MemberEntity> findByIds(Connection conn, List<String> ids) throws SQLException {
         if (ids.isEmpty()) return List.of();
         String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
@@ -42,7 +40,6 @@ public class MemberRepository {
         }
     }
 
-    // MODIFICATION 3: insert avec id explicite (plus de RETURNING id, ne retourne rien)
     public void insert(Connection conn, MemberEntity member) throws SQLException {
         String sql = "INSERT INTO member (id, first_name, last_name, birth_date, gender, address, profession, phone_number, email, date_adhesion_federation) VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -60,7 +57,6 @@ public class MemberRepository {
         }
     }
 
-    // MODIFICATION 4: countAll (inchangé - retourne le nombre total de membres)
     public int countAll(Connection conn) throws SQLException {
         String sql = "SELECT COUNT(*) FROM member";
         try (Statement stmt = conn.createStatement()) {
@@ -72,7 +68,6 @@ public class MemberRepository {
         }
     }
 
-    // MODIFICATION 5: map - récupère l'id comme String
     private MemberEntity map(ResultSet rs) throws SQLException {
         MemberEntity m = new MemberEntity();
         m.setId(rs.getString("id"));

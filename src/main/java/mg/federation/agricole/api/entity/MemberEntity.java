@@ -3,11 +3,11 @@ package mg.federation.agricole.api.entity;
 import java.time.LocalDate;
 
 public class MemberEntity {
-    private String id;  // Long → String
+    private String id;
     private String firstName;
     private String lastName;
     private LocalDate birthDate;
-    private String gender; // MALE, FEMALE
+    private String gender;
     private String address;
     private String profession;
     private String phoneNumber;

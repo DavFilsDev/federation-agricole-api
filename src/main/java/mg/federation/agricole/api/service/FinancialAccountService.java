@@ -30,19 +30,15 @@ public class FinancialAccountService {
 
     public List<FinancialAccount> getFinancialAccounts(String collectivityIdStr, LocalDate atDate) {
         try (Connection conn = dataSource.getConnection()) {
-            // MODIFICATION: Plus besoin de parsing, c'est déjà une String
             String collectivityId = collectivityIdStr;
 
-            // Vérifier que la collectivité existe
             if (collectivityRepository.findById(conn, collectivityId).isEmpty()) {
                 throw new ResourceNotFoundException("Collectivity not found with id: " + collectivityIdStr);
             }
 
-            // Si la date est fournie, récupérer les soldes à cette date
             if (atDate != null) {
                 return financialAccountRepository.findByCollectivityIdAndDate(conn, collectivityId, atDate);
             } else {
-                // Sinon, récupérer les soldes actuels
                 return financialAccountRepository.findByCollectivityId(conn, collectivityId);
             }
 

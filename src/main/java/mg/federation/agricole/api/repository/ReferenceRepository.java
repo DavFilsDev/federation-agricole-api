@@ -9,7 +9,6 @@ import java.time.LocalDate;
 @Repository
 public class ReferenceRepository {
 
-    // MODIFICATION: insert avec String IDs
     public void insert(Connection conn, ReferenceEntity ref) throws SQLException {
         String sql = "INSERT INTO reference (candidate_id, sponsor_id, relation_nature, sponsorship_date) VALUES (?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {

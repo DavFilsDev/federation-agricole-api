@@ -11,7 +11,6 @@ import java.util.List;
 @Repository
 public class TransactionRepository {
 
-    // MODIFICATION 1: findByCollectivityIdAndDateRange avec String collectivityId
     public List<TransactionEntity> findByCollectivityIdAndDateRange(Connection conn, String collectivityId, LocalDate from, LocalDate to) throws SQLException {
         String sql = "SELECT id, member_id, collectivity_id, amount, payment_mode, account_credited_id, membership_fee_id, creation_date " +
                 "FROM transaction WHERE collectivity_id = ? AND creation_date BETWEEN ? AND ? " +
@@ -41,7 +40,6 @@ public class TransactionRepository {
         return transactions;
     }
 
-    // MODIFICATION 2: insert avec id explicite (plus de RETURNING id)
     public void insert(Connection conn, TransactionEntity transaction) throws SQLException {
         String sql = "INSERT INTO transaction (id, member_id, collectivity_id, amount, payment_mode, account_credited_id, membership_fee_id, creation_date) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";

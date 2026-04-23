@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class MembershipFeeEntity {
-    private String id;           // Long → String (cot-1, cot-2, cot-3)
-    private String collectivityId; // Long → String (col-1, col-2, col-3)
+    private String id;
+    private String collectivityId;
     private LocalDate eligibleFrom;
     private String frequency;
     private BigDecimal amount;

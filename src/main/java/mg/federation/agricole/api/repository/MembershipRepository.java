@@ -10,7 +10,6 @@ import java.util.*;
 @Repository
 public class MembershipRepository {
 
-    // MODIFICATION 1: insert avec String IDs
     public void insert(Connection conn, MembershipEntity membership) throws SQLException {
         String sql = "INSERT INTO membership (member_id, collectivity_id, occupation, registration_fee_paid, membership_dues_paid, date_adhesion, payment_date) VALUES (?,?,?,?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -25,7 +24,6 @@ public class MembershipRepository {
         }
     }
 
-    // MODIFICATION 2: findByCollectivityId avec String collectivityId
     public List<MembershipEntity> findByCollectivityId(Connection conn, String collectivityId) throws SQLException {
         String sql = "SELECT member_id, collectivity_id, occupation, registration_fee_paid, membership_dues_paid, date_adhesion, payment_date FROM membership WHERE collectivity_id = ?";
         List<MembershipEntity> list = new ArrayList<>();
@@ -48,7 +46,6 @@ public class MembershipRepository {
         return list;
     }
 
-    // MODIFICATION 3: hasSeniorRole avec String memberId
     public boolean hasSeniorRole(Connection conn, String memberId) throws SQLException {
         String sql = "SELECT 1 FROM membership WHERE member_id = ? AND occupation = 'SENIOR' LIMIT 1";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -58,7 +55,6 @@ public class MembershipRepository {
         }
     }
 
-    // MODIFICATION 4: countRefereesInCollectivity avec List<String> refereeIds et String collectivityId
     public int countRefereesInCollectivity(Connection conn, List<String> refereeIds, String collectivityId) throws SQLException {
         if (refereeIds.isEmpty()) return 0;
         String placeholders = String.join(",", Collections.nCopies(refereeIds.size(), "?"));
@@ -74,7 +70,6 @@ public class MembershipRepository {
         }
     }
 
-    // MODIFICATION 5: findCollectivityIdByMemberId avec String memberId, retourne Optional<String>
     public Optional<String> findCollectivityIdByMemberId(Connection conn, String memberId) throws SQLException {
         String sql = "SELECT collectivity_id FROM membership WHERE member_id = ? LIMIT 1";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -87,7 +82,6 @@ public class MembershipRepository {
         }
     }
 
-    // MODIFICATION 6: isMemberInCollectivity avec String memberId et String collectivityId
     public boolean isMemberInCollectivity(Connection conn, String memberId, String collectivityId) throws SQLException {
         String sql = "SELECT 1 FROM membership WHERE member_id = ? AND collectivity_id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {

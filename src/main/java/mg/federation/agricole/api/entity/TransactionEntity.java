@@ -4,13 +4,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class TransactionEntity {
-    private String id;                 // Long → String (tx-C1-M1, tx-C2-M1, etc.)
-    private String memberId;           // Long → String (C1-M1, C1-M2, etc.)
-    private String collectivityId;     // Long → String (col-1, col-2, col-3)
+    private String id;
+    private String memberId;
+    private String collectivityId;
     private BigDecimal amount;
     private String paymentMode;
-    private String accountCreditedId;  // Long → String (C1-A-CASH, C2-A-MOBILE-1, etc.)
-    private String membershipFeeId;    // Long → String (cot-1, cot-2, cot-3) (nullable)
+    private String accountCreditedId;
+    private String membershipFeeId;
     private LocalDate creationDate;
 
     public TransactionEntity() {}

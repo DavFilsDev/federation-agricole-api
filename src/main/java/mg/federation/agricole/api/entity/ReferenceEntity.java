@@ -4,8 +4,8 @@ package mg.federation.agricole.api.entity;
 import java.time.LocalDate;
 
 public class ReferenceEntity {
-    private String candidateId;  // Long → String (C1-M1, C1-M2, etc.)
-    private String sponsorId;    // Long → String (C1-M1, C1-M2, etc.)
+    private String candidateId;
+    private String sponsorId;
     private String relationNature;
     private LocalDate sponsorshipDate;
 

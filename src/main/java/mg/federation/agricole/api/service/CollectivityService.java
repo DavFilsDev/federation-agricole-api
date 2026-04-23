@@ -70,7 +70,6 @@ public class CollectivityService {
                     }
                 }
 
-                // 4. Vérifier les postes spécifiques
                 CreateCollectivityStructure structure = create.getStructure();
                 if (structure == null) {
                     throw new BusinessRuleException("Structure (president, vicePresident, treasurer, secretary) is required");
@@ -83,7 +82,6 @@ public class CollectivityService {
                 if (roleIds.size() != 4) {
                     throw new BusinessRuleException("President, vice-president, treasurer and secretary must be distinct");
                 }
-                // Vérifier que ces 4 membres sont bien dans la liste des membres
                 Set<String> memberIdSet = new HashSet<>(memberIds);
                 for (String roleId : roleIds) {
                     if (!memberIdSet.contains(roleId)) {
@@ -91,12 +89,10 @@ public class CollectivityService {
                     }
                 }
 
-                // 5. Générer un ID unique pour la collectivité (ex: col-1, col-2, etc.)
                 String collectivityId = generateCollectivityId();
 
-                // Insérer la collectivité
                 CollectivityEntity collectivityEntity = new CollectivityEntity();
-                collectivityEntity.setId(collectivityId);  // Nouveau: set l'ID
+                collectivityEntity.setId(collectivityId);
                 collectivityEntity.setLocation(create.getLocation());
                 collectivityEntity.setSpecialiteAgricole("inconnue");
                 collectivityEntity.setAnnualDuesAmount(0);
@@ -106,13 +102,11 @@ public class CollectivityService {
                 collectivityEntity.setName(null);
                 collectivityRepository.insert(conn, collectivityEntity);
 
-                // 6. Insérer les membreships
                 LocalDate now = LocalDate.now();
                 for (String memberId : memberIds) {
                     MembershipEntity ms = new MembershipEntity();
                     ms.setMemberId(memberId);
                     ms.setCollectivityId(collectivityId);
-                    // Déterminer l'occupation
                     String occupation;
                     if (memberId.equals(structure.getPresident())) {
                         occupation = "PRESIDENT";
@@ -133,7 +127,6 @@ public class CollectivityService {
                     membershipRepository.insert(conn, ms);
                 }
 
-                // 7. Recharger l'entité collectivité
                 CollectivityEntity savedEntity = collectivityRepository.findById(conn, collectivityId)
                         .orElseThrow(() -> new RuntimeException("Collectivity not found after insertion"));
 
@@ -185,7 +178,6 @@ public class CollectivityService {
             });
         }
 
-        // Extraire la structure (président, vice-président, trésorier, secrétaire)
         CollectivityStructure struct = new CollectivityStructure();
         for (MembershipEntity ms : memberships) {
             Member m = memberMap.get(ms.getMemberId());
@@ -206,9 +198,8 @@ public class CollectivityService {
             }
         }
 
-        // Construction du DTO Collectivity
         Collectivity dto = new Collectivity();
-        dto.setId(entity.getId());  // String, plus besoin de String.valueOf()
+        dto.setId(entity.getId());
         dto.setLocation(entity.getLocation());
         dto.setNumber(entity.getNumber());
         dto.setName(entity.getName());
@@ -237,31 +228,25 @@ public class CollectivityService {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                String id = idStr;  // Plus besoin de parsing, c'est déjà String
+                String id = idStr;
 
-                // Vérifier existence
                 CollectivityEntity entity = collectivityRepository.findById(conn, id)
                         .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found"));
 
-                // Vérifier si déjà nom et numéro (ne peut pas être modifié)
                 if (collectivityRepository.hasNameAndNumber(conn, id)) {
                     throw new BusinessRuleException("Name and number already set (immutable)");
                 }
 
-                // Vérifier unicité du nom
                 if (collectivityRepository.isNameUsed(conn, info.getName(), id)) {
                     throw new BusinessRuleException("Name already used by another collectivity");
                 }
 
-                // Vérifier unicité du numéro
                 if (collectivityRepository.isNumberUsed(conn, info.getNumber(), id)) {
                     throw new BusinessRuleException("Number already used by another collectivity");
                 }
 
-                // Mettre à jour
                 collectivityRepository.updateNameAndNumber(conn, id, info.getName(), info.getNumber());
 
-                // Recharger l'entité
                 CollectivityEntity updated = collectivityRepository.findById(conn, id)
                         .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found after update"));
                 conn.commit();
@@ -279,9 +264,8 @@ public class CollectivityService {
 
     public Collectivity getCollectivityById(String idStr) {
         try (Connection conn = dataSource.getConnection()) {
-            String id = idStr;  // Plus besoin de parsing
+            String id = idStr;
 
-            // Récupérer la collectivité
             CollectivityEntity entity = collectivityRepository.findByIdWithDetails(conn, id)
                     .orElseThrow(() -> new ResourceNotFoundException("Collectivity not found with id: " + idStr));
 
