@@ -1,13 +1,16 @@
 package mg.federation.agricole.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MobileBankingAccount implements FinancialAccount {
     private String id;
     private String holderName;
-    private String mobileBankingService; // AIRTEL_MONEY, MVOLA, ORANGE_MONEY
+    private String mobileBankingService;
     private String mobileNumber;
     private BigDecimal amount;
+    private String type = "MOBILE_BANKING";
 
     public MobileBankingAccount() {}
 
@@ -27,4 +30,7 @@ public class MobileBankingAccount implements FinancialAccount {
     @Override
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 }
