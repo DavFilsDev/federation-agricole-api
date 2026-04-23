@@ -71,4 +71,28 @@ public class MembershipRepository {
             return 0;
         }
     }
+
+    // Trouver la collectivité d'un membre
+    public Optional<Long> findCollectivityIdByMemberId(Connection conn, Long memberId) throws SQLException {
+        String sql = "SELECT collectivity_id FROM membership WHERE member_id = ? LIMIT 1";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, memberId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(rs.getLong("collectivity_id"));
+            }
+            return Optional.empty();
+        }
+    }
+
+    // Vérifier si un membre appartient à une collectivité
+    public boolean isMemberInCollectivity(Connection conn, Long memberId, Long collectivityId) throws SQLException {
+        String sql = "SELECT 1 FROM membership WHERE member_id = ? AND collectivity_id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, memberId);
+            stmt.setLong(2, collectivityId);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
+        }
+    }
 }
