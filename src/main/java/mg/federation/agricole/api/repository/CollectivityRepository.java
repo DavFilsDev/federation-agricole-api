@@ -1,4 +1,3 @@
-// repository/CollectivityRepository.java
 package mg.federation.agricole.api.repository;
 
 import mg.federation.agricole.api.entity.CollectivityEntity;
@@ -86,6 +85,28 @@ public class CollectivityRepository {
             stmt.setLong(2, excludeId);
             ResultSet rs = stmt.executeQuery();
             return rs.next();
+        }
+    }
+
+    public Optional<CollectivityEntity> findByIdWithDetails(Connection conn, Long id) throws SQLException {
+        String sql = "SELECT id, location, name, number, specialite_agricole, annual_dues_amount, date_creation, federation_approval " +
+                "FROM collectivity WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                CollectivityEntity entity = new CollectivityEntity();
+                entity.setId(rs.getLong("id"));
+                entity.setLocation(rs.getString("location"));
+                entity.setName(rs.getString("name"));
+                entity.setNumber(rs.getInt("number"));
+                entity.setSpecialiteAgricole(rs.getString("specialite_agricole"));
+                entity.setAnnualDuesAmount(rs.getInt("annual_dues_amount"));
+                entity.setDateCreation(rs.getDate("date_creation").toLocalDate());
+                entity.setFederationApproval(rs.getBoolean("federation_approval"));
+                return Optional.of(entity);
+            }
+            return Optional.empty();
         }
     }
 }
