@@ -8,6 +8,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class MembershipFeeRepository {
@@ -63,6 +64,27 @@ public class MembershipFeeRepository {
             stmt.setBigDecimal(4, amount);
             ResultSet rs = stmt.executeQuery();
             return rs.next();
+        }
+    }
+
+    public Optional<MembershipFeeEntity> findById(Connection conn, Long id) throws SQLException {
+        String sql = "SELECT id, collectivity_id, eligible_from, frequency, amount, label, status " +
+                "FROM membership_fee WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                MembershipFeeEntity fee = new MembershipFeeEntity();
+                fee.setId(rs.getLong("id"));
+                fee.setCollectivityId(rs.getLong("collectivity_id"));
+                fee.setEligibleFrom(rs.getDate("eligible_from").toLocalDate());
+                fee.setFrequency(rs.getString("frequency"));
+                fee.setAmount(rs.getBigDecimal("amount"));
+                fee.setLabel(rs.getString("label"));
+                fee.setStatus(rs.getString("status"));
+                return Optional.of(fee);
+            }
+            return Optional.empty();
         }
     }
 }
