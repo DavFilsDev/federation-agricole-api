@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -110,5 +113,110 @@ public class FinancialAccountRepository {
             stmt.setLong(2, accountId);
             stmt.executeUpdate();
         }
+    }
+
+    // Récupérer tous les comptes d'une collectivité
+    public List<FinancialAccount> findByCollectivityId(Connection conn, Long collectivityId) throws SQLException {
+        String sql = "SELECT id, type, amount FROM financial_account WHERE collectivity_id = ?";
+        List<FinancialAccount> accounts = new ArrayList<>();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, collectivityId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Long id = rs.getLong("id");
+                String type = rs.getString("type");
+                BigDecimal amount = rs.getBigDecimal("amount");
+
+                FinancialAccount account = getAccountWithDetails(conn, id, type, amount);
+                if (account != null) {
+                    accounts.add(account);
+                }
+            }
+        }
+        return accounts;
+    }
+
+    // Récupérer les comptes d'une collectivité à une date donnée (solde historique)
+    public List<FinancialAccount> findByCollectivityIdAndDate(Connection conn, Long collectivityId, LocalDate atDate) throws SQLException {
+        // Pour le solde à une date donnée, on doit calculer la somme des transactions avant cette date
+        // Pour chaque compte, solde = somme des transactions où account_credited_id = compte ET creation_date <= atDate
+        // Moins les éventuels débits (si on avait des comptes avec débits)
+
+        String sql = "SELECT " +
+                "  fa.id, " +
+                "  fa.type, " +
+                "  COALESCE(SUM(t.amount), 0) as calculated_amount " +
+                "FROM financial_account fa " +
+                "LEFT JOIN transaction t ON t.account_credited_id = fa.id AND t.creation_date <= ? " +
+                "WHERE fa.collectivity_id = ? " +
+                "GROUP BY fa.id, fa.type";
+
+        List<FinancialAccount> accounts = new ArrayList<>();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setDate(1, Date.valueOf(atDate));
+            stmt.setLong(2, collectivityId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Long id = rs.getLong("id");
+                String type = rs.getString("type");
+                BigDecimal amount = rs.getBigDecimal("calculated_amount");
+
+                FinancialAccount account = getAccountWithDetails(conn, id, type, amount);
+                if (account != null) {
+                    accounts.add(account);
+                }
+            }
+        }
+        return accounts;
+    }
+
+    // Méthode utilitaire pour récupérer un compte avec ses détails spécifiques
+    private FinancialAccount getAccountWithDetails(Connection conn, Long id, String type, BigDecimal amount) throws SQLException {
+        switch (type) {
+            case "CASH":
+                CashAccount cashAccount = new CashAccount(String.valueOf(id), amount);
+                cashAccount.setType("CASH");
+                return cashAccount;
+
+            case "MOBILE_BANKING":
+                String mobileSql = "SELECT holder_name, mobile_service, mobile_number FROM mobile_banking_account WHERE id = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(mobileSql)) {
+                    stmt.setLong(1, id);
+                    ResultSet rs = stmt.executeQuery();
+                    if (rs.next()) {
+                        MobileBankingAccount mobileAccount = new MobileBankingAccount();
+                        mobileAccount.setId(String.valueOf(id));
+                        mobileAccount.setAmount(amount);
+                        mobileAccount.setType("MOBILE_BANKING");
+                        mobileAccount.setHolderName(rs.getString("holder_name"));
+                        mobileAccount.setMobileBankingService(rs.getString("mobile_service"));
+                        mobileAccount.setMobileNumber(rs.getString("mobile_number"));
+                        return mobileAccount;
+                    }
+                }
+                break;
+
+            case "BANK":
+                String bankSql = "SELECT holder_name, bank_name, bank_code, branch_code, account_number, account_key FROM bank_account WHERE id = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(bankSql)) {
+                    stmt.setLong(1, id);
+                    ResultSet rs = stmt.executeQuery();
+                    if (rs.next()) {
+                        BankAccount bankAccount = new BankAccount();
+                        bankAccount.setId(String.valueOf(id));
+                        bankAccount.setAmount(amount);
+                        bankAccount.setType("BANK");
+                        bankAccount.setHolderName(rs.getString("holder_name"));
+                        bankAccount.setBankName(rs.getString("bank_name"));
+                        bankAccount.setBankCode(rs.getInt("bank_code"));
+                        bankAccount.setBankBranchCode(rs.getInt("branch_code"));
+                        bankAccount.setBankAccountNumber(rs.getInt("account_number"));
+                        bankAccount.setBankAccountKey(rs.getInt("account_key"));
+                        return bankAccount;
+                    }
+                }
+                break;
+        }
+        return null;
     }
 }
