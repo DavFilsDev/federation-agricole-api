@@ -13,6 +13,7 @@ public class DataSource {
     private final String jdbcUrl;
     private final String username;
     private final String password;
+    private final String apiKey;
 
     public DataSource() {
         Dotenv dotenv = Dotenv.configure()
@@ -21,6 +22,7 @@ public class DataSource {
         this.jdbcUrl = dotenv.get("JDBC_URL");
         this.username = dotenv.get("DB_USER");
         this.password = dotenv.get("PASSWORD");
+        this.apiKey = dotenv.get("API_KEY");  // NOUVEAU
     }
 
     public Connection getConnection() {
@@ -39,5 +41,9 @@ public class DataSource {
                 throw new RuntimeException("Unable to close connection", e);
             }
         }
+    }
+
+    public String getApiKey() {
+        return apiKey;
     }
 }
