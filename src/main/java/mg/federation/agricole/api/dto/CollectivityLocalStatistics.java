@@ -6,6 +6,7 @@ public class CollectivityLocalStatistics {
     private MemberDescription memberDescription;
     private BigDecimal earnedAmount;
     private BigDecimal unpaidAmount;
+    private BigDecimal assiduityPercentage;
 
     public CollectivityLocalStatistics() {}
 
@@ -17,4 +18,7 @@ public class CollectivityLocalStatistics {
 
     public BigDecimal getUnpaidAmount() { return unpaidAmount; }
     public void setUnpaidAmount(BigDecimal unpaidAmount) { this.unpaidAmount = unpaidAmount; }
+
+    public BigDecimal getAssiduityPercentage() { return assiduityPercentage; }
+    public void setAssiduityPercentage(BigDecimal assiduityPercentage) { this.assiduityPercentage = assiduityPercentage; }
 }
